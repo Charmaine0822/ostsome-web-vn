@@ -394,7 +394,7 @@ function AppInner() {
       {page === 'home' && (
         <>
           <Hero onSelectProduct={handleSelectProduct} />
-          <CategoryGrid onNavToGenericCategory={handleNavToGenericCategory} />
+          <CategoryGrid onNavToCategory={handleNavToNavCategory} />
           <FlashSaleSection
             onSelectProduct={handleSelectProduct}
             onViewAll={() => goTo({ page: 'flash-sale' })}

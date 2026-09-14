@@ -1,86 +1,61 @@
-import { Dumbbell, HeartPulse, Volume2, Headphones, Smartphone, Laptop, Mic, Gamepad2, Briefcase, Sparkles } from 'lucide-react';
+import { Camera, Headphones, Gamepad2, Watch, HeartPulse, Plane, Monitor } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
-import { GENERIC_CATEGORIES, mapGenericCategory, type GenericCategoryKey } from '../data/genericCategories';
+import { NAV_CATEGORIES, type NavCategoryKey } from '../data/navCategories';
 import type { Product } from '../data/products';
-import technologyIcon from '../../imports/technology icon.jpeg';
-import facemaskIcon from '../../imports/facemask icon.jpeg';
-import laptopIcon from '../../imports/laptop icon.jpeg';
-import phoneIcon from '../../imports/phone icon.jpeg';
 
-// Fixed brand icons for specific categories, per VN team request — these
-// take priority over the usual "pull a cover photo from the first
-// in-stock product" logic below, since a random product photo doesn't
-// represent these categories as well as a purpose-made icon does.
-const CATEGORY_IMAGE_OVERRIDES: Partial<Record<GenericCategoryKey, string>> = {
-  'phu-kien-di-dong': phoneIcon,
-  'phu-kien-laptop': laptopIcon,
-  'suc-khoe-lam-dep': facemaskIcon,
-  'khac': technologyIcon,
-};
-
-// Only used as a placeholder for the rare case a category has no product
-// image at all — the photo itself is the primary visual now, no badge.
-const ICONS: Record<GenericCategoryKey, React.ComponentType<{ size?: number; className?: string }>> = {
-  'the-thao': Dumbbell,
-  'suc-khoe-lam-dep': HeartPulse,
-  'loa': Volume2,
-  'tai-nghe': Headphones,
-  'phu-kien-di-dong': Smartphone,
-  'phu-kien-laptop': Laptop,
-  'micro': Mic,
-  'gaming': Gamepad2,
-  'phu-kien-du-lich': Briefcase,
-  'khac': Sparkles,
+// Icon shown only as a placeholder when a category has no in-stock product
+// photo to use as a cover image — matches the emoji already defined
+// per-category in navCategories.ts.
+const ICONS: Record<NavCategoryKey, React.ComponentType<{ size?: number; className?: string }>> = {
+  'Mobile Creator': Camera,
+  'Mobile Audio': Headphones,
+  'Gaming': Gamepad2,
+  'Smart Life': Watch,
+  'Wellness': HeartPulse,
+  'Travel & Carry': Plane,
+  'Desk Setup': Monitor,
 };
 
 type CategoryGridProps = {
-  onNavToGenericCategory?: (category: GenericCategoryKey) => void;
+  onNavToCategory?: (category: NavCategoryKey) => void;
 };
 
-export function CategoryGrid({ onNavToGenericCategory }: CategoryGridProps) {
+export function CategoryGrid({ onNavToCategory }: CategoryGridProps) {
   const { products } = useProducts();
 
-  // Match ProductListing.tsx: hide sold-out products from counts and cover
-  // photos, so this grid's numbers agree with "All Products" instead of
-  // counting things that aren't actually purchasable.
-  const byCategory = products.filter(p => p.availableForSale).reduce<Partial<Record<GenericCategoryKey, Product[]>>>((acc, p) => {
-    const key = mapGenericCategory(p.type, p.title, p.vendor, p.collections);
+  // Match ProductListing.tsx / NavCategoryPage.tsx: hide sold-out products
+  // from counts and cover photos, so this grid's numbers agree with the
+  // nav bar's category pages instead of counting unpurchasable items.
+  const byCategory = products.filter(p => p.availableForSale).reduce<Partial<Record<NavCategoryKey, Product[]>>>((acc, p) => {
+    const key = p.navCategory as NavCategoryKey;
+    if (!key) return acc;
     (acc[key] ??= []).push(p);
     return acc;
   }, {});
 
-  // TEMPORARY: Loa is hidden until KEF is restocked — every KEF product
-  // (the only vendor in this category via the vendor override below) is
-  // currently sold out, so the category is otherwise always empty. Remove
-  // this filter to bring it back once there's stock.
-  const HIDDEN_CATEGORIES: GenericCategoryKey[] = ['loa'];
-
-  // Always show all 10 categories as a fixed nav strip, even ones with no
-  // matching products yet (falls back to the icon instead of a cover
-  // photo) — this is a fixed taxonomy the VN team wants visible in full,
-  // not a "only show what's currently in stock" grid.
-  const activeCategories = GENERIC_CATEGORIES
-    .filter(cat => !HIDDEN_CATEGORIES.includes(cat.key))
-    .map(cat => {
-      const items = byCategory[cat.key] ?? [];
-      const cover = items.find(p => p.availableForSale && p.images[0]) ?? items.find(p => p.images[0]);
-      return { ...cat, count: items.length, coverImage: CATEGORY_IMAGE_OVERRIDES[cat.key] ?? cover?.images[0] ?? null };
-    });
+  // Always show all 7 nav categories as a fixed strip, even ones with no
+  // matching products yet — same "full taxonomy always visible" behavior
+  // the old 10-category grid had, now mirroring the nav bar's taxonomy
+  // instead of the separate genericCategories.ts system.
+  const activeCategories = NAV_CATEGORIES.map(cat => {
+    const items = byCategory[cat.key] ?? [];
+    const cover = items.find(p => p.availableForSale && p.images[0]) ?? items.find(p => p.images[0]);
+    return { ...cat, count: items.length, coverImage: cover?.images[0] ?? null };
+  });
 
   return (
     <section className="w-full bg-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-lg md:text-xl font-bold text-black mb-6">Danh Mục Sản Phẩm</h2>
-        {/* Fixed grid-cols-5 on mobile so all 10 categories settle into
-            exactly 2 rows of 5, matching the VN team's reference layout;
-            widens to a single row of 10 from md up where there's room. */}
-        <div className="grid grid-cols-5 md:grid-cols-10 gap-x-2 gap-y-5 md:gap-x-4">
+        {/* 7 categories now instead of 10 — grid-cols-4 on mobile settles
+            into 2 rows (4 + 3), widens to a single row of 7 from sm up. */}
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-x-2 gap-y-5 md:gap-x-4">
           {activeCategories.map(cat => {
             const Icon = ICONS[cat.key];
             return (
               <button
                 key={cat.key}
-                onClick={() => onNavToGenericCategory?.(cat.key)}
+                onClick={() => onNavToCategory?.(cat.key)}
                 className="flex flex-col items-center gap-2 group"
               >
                 <span className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-white overflow-hidden ring-1 ring-neutral-200 group-hover:ring-2 group-hover:ring-[#F16C10] transition-all shadow-sm group-hover:shadow-md">
