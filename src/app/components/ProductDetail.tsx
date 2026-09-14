@@ -51,6 +51,15 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
   const [shopifyVariantNodes, setShopifyVariantNodes] = useState<ShopifyProduct['variants']['edges'][number]['node'][]>([]);
   const [variantsLoaded, setVariantsLoaded] = useState(false);
   const [stockWarning, setStockWarning] = useState<{ requested: number; available: number; intent: 'cart' | 'checkout' } | null>(null);
+  // Popup shown instead of the old inline-only "bắt buộc" (required) text
+  // when Buy Now / Add to Cart is clicked without a variant chosen — the
+  // inline text sits next to the swatches further down the page, so on
+  // mobile (where these buttons live in the sticky bottom bar) customers
+  // clicking without scrolling up first saw nothing happen and assumed the
+  // site was broken. This surfaces the exact same option picker in a modal
+  // instead, right where the click happened.
+  const [variantModalIntent, setVariantModalIntent] = useState<'cart' | 'checkout' | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
   // Full-screen image lightbox, opened by clicking the main product photo —
   // reuses activeImg/allImages so the lightbox and the inline gallery always
   // stay in sync (advancing one advances the other).
@@ -223,6 +232,153 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
     });
   }
 
+  // Option 1 / Option 2 pickers, extracted into functions so the exact same
+  // swatches render both inline in the page (original position) and inside
+  // the variant-selection popup — one source of truth for the UI, and
+  // picking a value in either place updates the same shared state.
+  function renderOption1(highlightError: boolean) {
+    if (!(variants.length > 0 && option1Name && option1Name !== 'Title')) return null;
+    return (
+      <div className="mb-5">
+        <label className={`text-xs font-semibold uppercase tracking-wide block mb-2 ${highlightError && !selectedOption1 ? 'text-red-500' : 'text-neutral-600'}`}>
+          {option1Name}
+          {selectedOption1 && (
+            <span className="text-black normal-case tracking-normal font-normal ml-1">: {selectedOption1}</span>
+          )}
+          {highlightError && !selectedOption1 && (
+            <span className="text-red-500 normal-case tracking-normal font-normal ml-1">— bắt buộc</span>
+          )}
+        </label>
+        {isColourOption(option1Name) ? (
+          <div className="flex flex-wrap gap-2">
+            {option1Values.map((val) => {
+              const v = variants.find(vv => vv.option1Value === val && vv.image);
+              const available = isOption1ValueAvailable(val);
+              return (
+                <button
+                  key={val}
+                  onClick={() => handleOption1Select(val)}
+                  title={available ? val : `${val} — Hết hàng`}
+                  className={`relative w-12 h-12 rounded-xl overflow-hidden border-2 transition-all ${
+                    selectedOption1 === val
+                      ? 'border-[#F16C10] scale-110'
+                      : 'border-neutral-200 hover:border-neutral-400'
+                  } ${!available ? 'opacity-40 grayscale' : ''}`}
+                >
+                  {v?.image ? (
+                    <img src={v.image} alt={val} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-[8px] text-neutral-400 p-0.5 text-center leading-tight">
+                      {val}
+                    </div>
+                  )}
+                  {!available && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/40">
+                      <div className="w-full h-px bg-neutral-500 rotate-45" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {option1Values.map((val) => {
+              const available = isOption1ValueAvailable(val);
+              return (
+                <button
+                  key={val}
+                  onClick={() => handleOption1Select(val)}
+                  title={available ? undefined : `${val} — Hết hàng`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                    selectedOption1 === val
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+                  } ${!available ? 'opacity-40 line-through' : ''}`}
+                >
+                  {val}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderOption2(highlightError: boolean) {
+    if (!(option2Values.length > 0 && option2Name)) return null;
+    return (
+      <div className="mb-5">
+        <label className={`text-xs font-semibold uppercase tracking-wide block mb-2 ${highlightError && !selectedOption2 ? 'text-red-500' : 'text-neutral-600'}`}>
+          {option2Name}
+          {selectedOption2 && (
+            <span className="text-black normal-case tracking-normal font-normal ml-1">: {selectedOption2}</span>
+          )}
+          {highlightError && !selectedOption2 && (
+            <span className="text-red-500 normal-case tracking-normal font-normal ml-1">— bắt buộc</span>
+          )}
+        </label>
+        {isColourOption(option2Name) ? (
+          <div className="flex flex-wrap gap-2">
+            {option2Values.map((val) => {
+              const v = variants.find(vv =>
+                (!selectedOption1 || vv.option1Value === selectedOption1) &&
+                vv.option2Value === val
+              );
+              const available = isOption2ValueAvailable(val);
+              return (
+                <button
+                  key={val}
+                  onClick={() => handleOption2Select(val)}
+                  title={available ? val : `${val} — Hết hàng`}
+                  className={`relative w-12 h-12 rounded-xl overflow-hidden border-2 transition-all ${
+                    selectedOption2 === val
+                      ? 'border-[#F16C10] scale-110'
+                      : 'border-neutral-200 hover:border-neutral-400'
+                  } ${!available ? 'opacity-40 grayscale' : ''}`}
+                >
+                  {v?.image ? (
+                    <img src={v.image} alt={val} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-[8px] text-neutral-400 p-0.5 text-center leading-tight">
+                      {val}
+                    </div>
+                  )}
+                  {!available && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/40">
+                      <div className="w-full h-px bg-neutral-500 rotate-45" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {option2Values.map((val) => {
+              const available = isOption2ValueAvailable(val);
+              return (
+                <button
+                  key={val}
+                  onClick={() => setSelectedOption2(val)}
+                  title={available ? undefined : `${val} — Hết hàng`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                    selectedOption2 === val
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+                  } ${!available ? 'opacity-40 line-through' : ''}`}
+                >
+                  {val}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Whether the exact currently-selected combo is in stock — this is what
   // gates the Add to Cart / Buy Now buttons.
   const selectedVariantAvailable = useMemo(() => {
@@ -300,6 +456,9 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
 
   const needsOption1 = variants.length > 0 && option1Name && option1Name !== 'Title';
   const needsOption2 = option2Values.length > 0 && option2Name;
+  // Whether the customer still needs to pick something before an add/buy
+  // action can proceed — used to decide whether to open the variant popup.
+  const needsSelection = Boolean((needsOption1 && !selectedOption1) || (needsOption2 && !selectedOption2));
 
   function getMissingOptionsMessage(): string | null {
     if (needsOption1 && !selectedOption1 && needsOption2 && !selectedOption2) {
@@ -317,13 +476,10 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
     return null;
   }
 
-  function handleAddToCart() {
-    const error = getMissingOptionsMessage();
-    if (error) {
-      setValidationError(error);
-      setTimeout(() => setValidationError(null), 3500);
-      return;
-    }
+  // Runs the actual "add to cart" work — stock check + addItem + the
+  // confirmation animation. Assumes options have already been validated
+  // by whichever caller (direct click, or the variant popup) invokes this.
+  function proceedAddToCart() {
     // Check actual stock before adding — previously the quantity selector
     // had no idea how many units were really in stock, so a customer could
     // request more than was available; Shopify's real cart would then
@@ -353,13 +509,10 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
     setTimeout(() => setAddedToCart(false), 2000);
   }
 
-  function handleBuyNow() {
-    const error = getMissingOptionsMessage();
-    if (error) {
-      setValidationError(error);
-      setTimeout(() => setValidationError(null), 3500);
-      return;
-    }
+  // Same as proceedAddToCart but hands off to checkout afterward — this is
+  // Buy Now's existing behavior, unchanged, just extracted so the variant
+  // popup can trigger the exact same flow once a selection is made.
+  function proceedBuyNow() {
     const remainingStock = maxQtyAvailable !== null ? Math.max(0, maxQtyAvailable - alreadyInCartQty) : null;
     if (remainingStock !== null && qty > remainingStock) {
       setStockWarning({ requested: qty, available: remainingStock, intent: 'checkout' });
@@ -379,6 +532,56 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
       qty,
     });
     onCheckout?.();
+  }
+
+  function handleAddToCart() {
+    if (needsSelection) {
+      setModalError(null);
+      setVariantModalIntent('cart');
+      return;
+    }
+    const error = getMissingOptionsMessage();
+    if (error) {
+      // Defensive fallback only — in practice unreachable, since the sold-out
+      // case this covers already replaces these buttons with a disabled
+      // "Hết Hàng" block before a click is even possible.
+      setValidationError(error);
+      setTimeout(() => setValidationError(null), 3500);
+      return;
+    }
+    proceedAddToCart();
+  }
+
+  function handleBuyNow() {
+    if (needsSelection) {
+      setModalError(null);
+      setVariantModalIntent('checkout');
+      return;
+    }
+    const error = getMissingOptionsMessage();
+    if (error) {
+      setValidationError(error);
+      setTimeout(() => setValidationError(null), 3500);
+      return;
+    }
+    proceedBuyNow();
+  }
+
+  // Called from the variant popup's confirm button. Re-validates (in case
+  // the popup was opened for option 1+2 and only one has been picked so
+  // far) and either shows an inline error inside the popup, or closes it
+  // and runs the exact same add/checkout flow the original button click
+  // would have run.
+  function handleConfirmVariantModal() {
+    if (needsSelection) {
+      setModalError(getMissingOptionsMessage());
+      return;
+    }
+    const intent = variantModalIntent;
+    setModalError(null);
+    setVariantModalIntent(null);
+    if (intent === 'cart') proceedAddToCart();
+    else if (intent === 'checkout') proceedBuyNow();
   }
 
   // After the customer confirms the popup, either lower the quantity to
@@ -477,6 +680,49 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
 
   return (
     <div className="min-h-screen bg-white">
+
+      {/* Variant selection popup — shown when Buy Now / Add to Cart is
+          clicked before a required option (color/size/etc.) is chosen.
+          Replaces relying on the inline "bắt buộc" text further down the
+          page, which customers using the sticky mobile buy bar never saw
+          without scrolling, making the click look like it did nothing. */}
+      {variantModalIntent && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[85vh] overflow-y-auto">
+            <button
+              onClick={() => { setVariantModalIntent(null); setModalError(null); }}
+              className="absolute top-3 right-3 w-8 h-8 bg-neutral-100 hover:bg-neutral-200 rounded-full flex items-center justify-center transition"
+            >
+              <X size={16} className="text-neutral-600" />
+            </button>
+            <h2 className="text-lg font-bold text-black mb-1">Chọn tùy chọn sản phẩm</h2>
+            <p className="text-sm text-neutral-500 mb-5">
+              Vui lòng chọn {[needsOption1 && option1Name, needsOption2 && option2Name].filter(Boolean).join(' và ')} trước khi tiếp tục.
+            </p>
+
+            {renderOption1(Boolean(modalError))}
+            {renderOption2(Boolean(modalError))}
+
+            {modalError && (
+              <div className="mb-3 flex items-start gap-2.5 bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium px-4 py-3 rounded-xl">
+                <span className="text-base leading-none mt-0.5">⚠️</span>
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            <button
+              onClick={handleConfirmVariantModal}
+              className={`w-full font-bold py-3.5 rounded-xl transition-colors text-sm uppercase tracking-wide ${
+                variantModalIntent === 'checkout'
+                  ? 'bg-black hover:bg-neutral-800 text-white'
+                  : 'bg-[#F16C10] hover:bg-[#d9610e] text-white'
+              }`}
+            >
+              {variantModalIntent === 'checkout' ? 'Tiếp Tục Đặt Hàng' : 'Thêm Vào Giỏ'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stock warning popup — shown instead of silently letting Shopify
           cap the quantity down at checkout with no explanation */}
@@ -807,144 +1053,8 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
               Hoặc trả góp 3 lần <strong className="text-black">{Math.round((isFostMember ? getFostPrice(activePrice) : activePrice) / 3).toLocaleString('vi-VN')}₫</strong> với Atome. Đã bao gồm thuế.
             </p>
 
-            {/* Option 1 */}
-            {variants.length > 0 && option1Name && option1Name !== 'Title' && (
-              <div className="mb-5">
-                <label className={`text-xs font-semibold uppercase tracking-wide block mb-2 ${validationError && !selectedOption1 ? 'text-red-500' : 'text-neutral-600'}`}>
-                  {option1Name}
-                  {selectedOption1 && (
-                    <span className="text-black normal-case tracking-normal font-normal ml-1">: {selectedOption1}</span>
-                  )}
-                  {validationError && !selectedOption1 && (
-                    <span className="text-red-500 normal-case tracking-normal font-normal ml-1">— bắt buộc</span>
-                  )}
-                </label>
-                {isColourOption(option1Name) ? (
-                  <div className="flex flex-wrap gap-2">
-                    {option1Values.map((val) => {
-                      const v = variants.find(vv => vv.option1Value === val && vv.image);
-                      const available = isOption1ValueAvailable(val);
-                      return (
-                        <button
-                          key={val}
-                          onClick={() => handleOption1Select(val)}
-                          title={available ? val : `${val} — Hết hàng`}
-                          className={`relative w-12 h-12 rounded-xl overflow-hidden border-2 transition-all ${
-                            selectedOption1 === val
-                              ? 'border-[#F16C10] scale-110'
-                              : 'border-neutral-200 hover:border-neutral-400'
-                          } ${!available ? 'opacity-40 grayscale' : ''}`}
-                        >
-                          {v?.image ? (
-                            <img src={v.image} alt={val} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-[8px] text-neutral-400 p-0.5 text-center leading-tight">
-                              {val}
-                            </div>
-                          )}
-                          {!available && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-white/40">
-                              <div className="w-full h-px bg-neutral-500 rotate-45" />
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {option1Values.map((val) => {
-                      const available = isOption1ValueAvailable(val);
-                      return (
-                        <button
-                          key={val}
-                          onClick={() => handleOption1Select(val)}
-                          title={available ? undefined : `${val} — Hết hàng`}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                            selectedOption1 === val
-                              ? 'bg-black text-white border-black'
-                              : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
-                          } ${!available ? 'opacity-40 line-through' : ''}`}
-                        >
-                          {val}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Option 2 */}
-            {option2Values.length > 0 && option2Name && (
-              <div className="mb-5">
-                <label className={`text-xs font-semibold uppercase tracking-wide block mb-2 ${validationError && !selectedOption2 ? 'text-red-500' : 'text-neutral-600'}`}>
-                  {option2Name}
-                  {selectedOption2 && (
-                    <span className="text-black normal-case tracking-normal font-normal ml-1">: {selectedOption2}</span>
-                  )}
-                  {validationError && !selectedOption2 && (
-                    <span className="text-red-500 normal-case tracking-normal font-normal ml-1">— bắt buộc</span>
-                  )}
-                </label>
-                {isColourOption(option2Name) ? (
-                  <div className="flex flex-wrap gap-2">
-                    {option2Values.map((val) => {
-                      const v = variants.find(vv =>
-                        (!selectedOption1 || vv.option1Value === selectedOption1) &&
-                        vv.option2Value === val
-                      );
-                      const available = isOption2ValueAvailable(val);
-                      return (
-                        <button
-                          key={val}
-                          onClick={() => handleOption2Select(val)}
-                          title={available ? val : `${val} — Hết hàng`}
-                          className={`relative w-12 h-12 rounded-xl overflow-hidden border-2 transition-all ${
-                            selectedOption2 === val
-                              ? 'border-[#F16C10] scale-110'
-                              : 'border-neutral-200 hover:border-neutral-400'
-                          } ${!available ? 'opacity-40 grayscale' : ''}`}
-                        >
-                          {v?.image ? (
-                            <img src={v.image} alt={val} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-[8px] text-neutral-400 p-0.5 text-center leading-tight">
-                              {val}
-                            </div>
-                          )}
-                          {!available && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-white/40">
-                              <div className="w-full h-px bg-neutral-500 rotate-45" />
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {option2Values.map((val) => {
-                      const available = isOption2ValueAvailable(val);
-                      return (
-                        <button
-                          key={val}
-                          onClick={() => setSelectedOption2(val)}
-                          title={available ? undefined : `${val} — Hết hàng`}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                            selectedOption2 === val
-                              ? 'bg-black text-white border-black'
-                              : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
-                          } ${!available ? 'opacity-40 line-through' : ''}`}
-                        >
-                          {val}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+            {renderOption1(Boolean(validationError))}
+            {renderOption2(Boolean(validationError))}
 
             {/* Quantity */}
             <div className="mb-5">
