@@ -21,7 +21,7 @@ export type NavCategoryKey =
   | 'Desk Setup';
 
 export const NAV_CATEGORIES: { key: NavCategoryKey; label: string; description: string; emoji: string }[] = [
-  { key: 'Mobile Creator', label: 'Nhà Sáng Tạo', description: 'Gimbal, camera, micro và phụ kiện gắn cho nhà sáng tạo nội dung di động.', emoji: '🎥' },
+  { key: 'Mobile Creator', label: 'Danh Mục Sản Phẩm', description: 'Gimbal, camera, micro và phụ kiện gắn cho nhà sáng tạo nội dung di động.', emoji: '🎥' },
   { key: 'Mobile Audio', label: 'Âm Thanh Di Động', description: 'Tai nghe nhét tai và tai nghe chụp cho âm nhạc, cuộc gọi và mọi khoảnh khắc.', emoji: '🎧' },
   { key: 'Gaming', label: 'Gaming', description: 'Tay cầm, bàn phím và màn hình dành cho game thủ.', emoji: '🎮' },
   { key: 'Smart Life', label: 'Cuộc Sống Thông Minh', description: 'Đồng hồ thông minh và thiết bị nhà thông minh giúp cuộc sống dễ dàng hơn.', emoji: '⌚' },
