@@ -51,14 +51,26 @@ function pickCategory(p: ShopifyProduct): string {
   return candidate ?? mapCategory(p.productType);
 }
 
+// Vendor-level overrides — checked BEFORE collections. Some vendors sell
+// products that land in a Shopify collection which doesn't reflect the
+// nav category they actually belong in — e.g. TurtleBeach headsets living
+// in the "Tai Nghe" (headphones) collection, which would otherwise map to
+// Mobile Audio instead of Gaming. For these vendors, vendor identity is a
+// more reliable signal than whatever collection the product happens to be
+// filed under.
+const VENDOR_NAV_OVERRIDES: Record<string, string> = {
+  'turtle beach': 'Gaming',
+  'satechi': 'Desk Setup',
+};
+
 // Real Shopify collection title (lowercased) -> nav category. Checked
-// FIRST, ahead of vendor/productType keyword guessing, since collections
-// are curated by the merchandising team and are a far more reliable
-// signal — mirrors the same "collections first" principle genericCategories.ts
-// used for the old 10-category grid, just remapped onto the 7 nav
-// categories. 'Khác' (catch-all, ~150 mixed-vendor products) is
-// intentionally excluded here since it's too mixed to map as one bucket —
-// those products fall through to the keyword rules below instead.
+// after vendor overrides, ahead of productType keyword guessing, since
+// collections are curated by the merchandising team and are a far more
+// reliable signal — mirrors the same "collections first" principle
+// genericCategories.ts used for the old 10-category grid, just remapped
+// onto the 7 nav categories. 'Khác' (catch-all, ~150 mixed-vendor
+// products) is intentionally excluded here since it's too mixed to map as
+// one bucket — those products fall through to the keyword rules below.
 const COLLECTION_TO_NAV_CATEGORY: Record<string, string> = {
   'phụ kiện du lịch': 'Travel & Carry',
   // Chargers / power banks (Native, SHARGE) — "Sạc dự phòng" (power bank)
@@ -77,6 +89,9 @@ const COLLECTION_TO_NAV_CATEGORY: Record<string, string> = {
 };
 
 function mapNavCategory(vendor: string, productType: string, collections: string[] = []): string {
+  const vendorOverride = VENDOR_NAV_OVERRIDES[vendor.trim().toLowerCase()];
+  if (vendorOverride) return vendorOverride;
+
   for (const title of collections) {
     const match = COLLECTION_TO_NAV_CATEGORY[title.trim().toLowerCase()];
     if (match) return match;
@@ -84,12 +99,12 @@ function mapNavCategory(vendor: string, productType: string, collections: string
 
   const v = vendor.toLowerCase();
   const t = productType.toLowerCase();
-  if (t.includes('gaming') || t.includes('controller') || v.includes('turtle beach') || v.includes('roccat') || (v.includes('skullcandy') && t.includes('gaming'))) return 'Gaming';
+  if (t.includes('gaming') || t.includes('controller') || v.includes('roccat') || (v.includes('skullcandy') && t.includes('gaming'))) return 'Gaming';
   if (t.includes('audio') || t.includes('headphone') || t.includes('earphone') || t.includes('speaker') || t.includes('earbud') || v.includes('sennheiser') || v.includes('skullcandy')) return 'Mobile Audio';
   if (t.includes('camera') || t.includes('gimbal') || t.includes('stabilizer') || v.includes('hohem') || v.includes('insta360') || v.includes('obsbot') || v.includes('kandao')) return 'Mobile Creator';
   if (t.includes('watch') || t.includes('fitness') || t.includes('wellness') || v.includes('kospet') || v.includes('therabody') || v.includes('polar')) return 'Wellness';
   if (t.includes('travel') || t.includes('carry') || t.includes('mount') || v.includes('peak design') || v.includes('sp connect') || v.includes('goal zero') || v.includes('boundary') || v.includes('sharge')) return 'Travel & Carry';
-  if (t.includes('desk') || t.includes('monitor') || t.includes('keyboard') || v.includes('arzopa') || v.includes('satechi')) return 'Desk Setup';
+  if (t.includes('desk') || t.includes('monitor') || t.includes('keyboard') || v.includes('arzopa')) return 'Desk Setup';
   if (v.includes('switchbot') || t.includes('smart home') || t.includes('smart life')) return 'Smart Life';
   return 'Smart Life';
 }
