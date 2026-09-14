@@ -51,15 +51,45 @@ function pickCategory(p: ShopifyProduct): string {
   return candidate ?? mapCategory(p.productType);
 }
 
-function mapNavCategory(vendor: string, productType: string): string {
+// Real Shopify collection title (lowercased) -> nav category. Checked
+// FIRST, ahead of vendor/productType keyword guessing, since collections
+// are curated by the merchandising team and are a far more reliable
+// signal — mirrors the same "collections first" principle genericCategories.ts
+// used for the old 10-category grid, just remapped onto the 7 nav
+// categories. 'Khác' (catch-all, ~150 mixed-vendor products) is
+// intentionally excluded here since it's too mixed to map as one bucket —
+// those products fall through to the keyword rules below instead.
+const COLLECTION_TO_NAV_CATEGORY: Record<string, string> = {
+  'phụ kiện du lịch': 'Travel & Carry',
+  // Chargers / power banks (Native, SHARGE) — "Sạc dự phòng" (power bank)
+  // is explicitly called out in the Travel & Carry description, so this
+  // collection fits there better than any other nav category.
+  'phụ kiện di động': 'Travel & Carry',
+  'phụ kiện laptop': 'Desk Setup',
+  'micro': 'Mobile Creator',
+  'tai nghe': 'Mobile Audio',
+  // Includes TheraFace (Therabody) — was previously falling through to
+  // the 'Smart Life' default since no keyword rule below caught it.
+  'sức khỏe làm đẹp': 'Wellness',
+  // Heart-rate / fitness tracking (Polar) fits "theo dõi sức khỏe và thể
+  // chất" (Wellness's own description) better than a literal sports bucket.
+  'thể thao': 'Wellness',
+};
+
+function mapNavCategory(vendor: string, productType: string, collections: string[] = []): string {
+  for (const title of collections) {
+    const match = COLLECTION_TO_NAV_CATEGORY[title.trim().toLowerCase()];
+    if (match) return match;
+  }
+
   const v = vendor.toLowerCase();
   const t = productType.toLowerCase();
-  if (t.includes('gaming') || t.includes('controller') || v.includes('turtle beach') || v.includes('roccat') || v.includes('skullcandy') && t.includes('gaming')) return 'Gaming';
+  if (t.includes('gaming') || t.includes('controller') || v.includes('turtle beach') || v.includes('roccat') || (v.includes('skullcandy') && t.includes('gaming'))) return 'Gaming';
   if (t.includes('audio') || t.includes('headphone') || t.includes('earphone') || t.includes('speaker') || t.includes('earbud') || v.includes('sennheiser') || v.includes('skullcandy')) return 'Mobile Audio';
   if (t.includes('camera') || t.includes('gimbal') || t.includes('stabilizer') || v.includes('hohem') || v.includes('insta360') || v.includes('obsbot') || v.includes('kandao')) return 'Mobile Creator';
-  if (t.includes('watch') || t.includes('fitness') || t.includes('wellness') || v.includes('kospet')) return 'Wellness';
-  if (t.includes('travel') || t.includes('carry') || t.includes('mount') || v.includes('peak design') || v.includes('sp connect')) return 'Travel & Carry';
-  if (t.includes('desk') || t.includes('monitor') || t.includes('keyboard') || v.includes('arzopa')) return 'Desk Setup';
+  if (t.includes('watch') || t.includes('fitness') || t.includes('wellness') || v.includes('kospet') || v.includes('therabody') || v.includes('polar')) return 'Wellness';
+  if (t.includes('travel') || t.includes('carry') || t.includes('mount') || v.includes('peak design') || v.includes('sp connect') || v.includes('goal zero') || v.includes('boundary') || v.includes('sharge')) return 'Travel & Carry';
+  if (t.includes('desk') || t.includes('monitor') || t.includes('keyboard') || v.includes('arzopa') || v.includes('satechi')) return 'Desk Setup';
   if (v.includes('switchbot') || t.includes('smart home') || t.includes('smart life')) return 'Smart Life';
   return 'Smart Life';
 }
@@ -180,7 +210,7 @@ export function mapShopifyProduct(p: ShopifyProduct): Product {
     vendor: p.vendor,
     type: p.productType,
     category: pickCategory(p),
-    navCategory: mapNavCategory(p.vendor, p.productType),
+    navCategory: mapNavCategory(p.vendor, p.productType, p.collections.edges.map(e => e.node.title)),
     price: parseFloat(firstVariant?.price.amount ?? '0'),
     comparePrice,
     images: p.images.edges.map(e => e.node.url),

@@ -15,6 +15,9 @@ type HeaderProps = {
   onNavToBrands?: () => void;
   onNavToCategory?: (category: string) => void;
   onNavToGenericCategory?: (category: GenericCategoryKey) => void;
+  // Special link for the "Danh Mục Sản Phẩm" nav item — routes to the
+  // homepage category grid instead of a filtered NavCategoryPage.
+  onNavToCategoryGrid?: () => void;
   onSelectProduct?: (product: Product) => void;
   onSearchNavigate?: (query: string) => void;
   onNavToLogin?: () => void;
@@ -30,7 +33,7 @@ const announcementMessages = [
   "🔥 Latest of the Latest",
 ];
 
-export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCategory, onNavToGenericCategory, onSelectProduct, onSearchNavigate, onNavToLogin, onNavToAccount, onLogout, currentPage, currentNavCategory }: HeaderProps) {
+export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCategory, onNavToGenericCategory, onNavToCategoryGrid, onSelectProduct, onSearchNavigate, onNavToLogin, onNavToAccount, onLogout, currentPage, currentNavCategory }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,6 +91,12 @@ export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCat
 
   function handleMenuNavCategory(key: string) {
     setMenuOpen(false);
+    // "Danh Mục Sản Phẩm" ('Mobile Creator' key) goes to the homepage
+    // category grid, not a filtered category page — see onNavToCategoryGrid.
+    if (key === 'Mobile Creator') {
+      onNavToCategoryGrid?.();
+      return;
+    }
     onNavToCategory?.(key);
   }
 
@@ -372,7 +381,7 @@ export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCat
               {NAV_CATEGORIES.map(cat => (
                 <button
                   key={cat.key}
-                  onClick={() => onNavToCategory?.(cat.key)}
+                  onClick={() => cat.key === 'Mobile Creator' ? onNavToCategoryGrid?.() : onNavToCategory?.(cat.key)}
                   className={`whitespace-nowrap hover:text-[#F16C10] transition-colors ${
                     currentPage === 'nav-category' && currentNavCategory === cat.key ? 'text-[#F16C10] font-semibold' : ''
                   }`}
