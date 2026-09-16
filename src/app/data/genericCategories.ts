@@ -30,6 +30,15 @@ export type GenericCategoryKey =
   | 'phu-kien-du-lich'
   | 'khac';
 
+// TEMPORARY: Loa is hidden until KEF is restocked — every KEF product (the
+// only vendor in this category via VENDOR_OVERRIDES below) is currently
+// sold out, so the category is otherwise always empty. Remove 'loa' from
+// this list to bring it back once there's stock. Shared between
+// CategoryGrid.tsx and Header.tsx (nav bar + hamburger menu) so all three
+// places stay in sync automatically instead of needing the same filter
+// maintained separately in each.
+export const HIDDEN_GENERIC_CATEGORIES: GenericCategoryKey[] = ['loa'];
+
 export const GENERIC_CATEGORIES: { key: GenericCategoryKey; label: string }[] = [
   { key: 'the-thao', label: 'Thể thao' },
   { key: 'suc-khoe-lam-dep', label: 'Sức Khỏe Làm Đẹp' },

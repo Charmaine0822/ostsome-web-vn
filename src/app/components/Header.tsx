@@ -6,7 +6,7 @@ import { useCart } from './CartContext';
 import { useProducts } from '../hooks/useProducts';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
-import { GENERIC_CATEGORIES, type GenericCategoryKey } from '../data/genericCategories';
+import { GENERIC_CATEGORIES, HIDDEN_GENERIC_CATEGORIES, type GenericCategoryKey } from '../data/genericCategories';
 
 type HeaderProps = {
   onNavToProducts?: () => void;
@@ -369,7 +369,7 @@ export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCat
               >
                 Tất Cả Sản Phẩm
               </button>
-              {GENERIC_CATEGORIES.map(cat => (
+              {GENERIC_CATEGORIES.filter(cat => !HIDDEN_GENERIC_CATEGORIES.includes(cat.key)).map(cat => (
                 <button
                   key={cat.key}
                   onClick={() => onNavToGenericCategory?.(cat.key)}
@@ -579,7 +579,7 @@ export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCat
               <p className="px-5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                 Danh Mục Sản Phẩm
               </p>
-              {GENERIC_CATEGORIES.map(cat => (
+              {GENERIC_CATEGORIES.filter(cat => !HIDDEN_GENERIC_CATEGORIES.includes(cat.key)).map(cat => (
                 <button
                   key={cat.key}
                   onClick={() => handleMenuGenericCategory(cat.key)}

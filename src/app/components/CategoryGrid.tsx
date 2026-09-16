@@ -1,6 +1,6 @@
 import { Dumbbell, HeartPulse, Volume2, Headphones, Smartphone, Laptop, Mic, Gamepad2, Briefcase, Sparkles } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
-import { GENERIC_CATEGORIES, mapGenericCategory, type GenericCategoryKey } from '../data/genericCategories';
+import { GENERIC_CATEGORIES, HIDDEN_GENERIC_CATEGORIES, mapGenericCategory, type GenericCategoryKey } from '../data/genericCategories';
 import type { Product } from '../data/products';
 import technologyIcon from '../../imports/technology icon.jpeg';
 import facemaskIcon from '../../imports/facemask icon.jpeg';
@@ -49,18 +49,13 @@ export function CategoryGrid({ onNavToGenericCategory }: CategoryGridProps) {
     return acc;
   }, {});
 
-  // TEMPORARY: Loa is hidden until KEF is restocked — every KEF product
-  // (the only vendor in this category via the vendor override below) is
-  // currently sold out, so the category is otherwise always empty. Remove
-  // this filter to bring it back once there's stock.
-  const HIDDEN_CATEGORIES: GenericCategoryKey[] = ['loa'];
-
-  // Always show all 10 categories as a fixed nav strip, even ones with no
-  // matching products yet (falls back to the icon instead of a cover
+  // Always show all categories as a fixed nav strip (minus anything in
+  // HIDDEN_GENERIC_CATEGORIES — see genericCategories.ts), even ones with
+  // no matching products yet (falls back to the icon instead of a cover
   // photo) — this is a fixed taxonomy the VN team wants visible in full,
   // not a "only show what's currently in stock" grid.
   const activeCategories = GENERIC_CATEGORIES
-    .filter(cat => !HIDDEN_CATEGORIES.includes(cat.key))
+    .filter(cat => !HIDDEN_GENERIC_CATEGORIES.includes(cat.key))
     .map(cat => {
       const items = byCategory[cat.key] ?? [];
       const cover = items.find(p => p.availableForSale && p.images[0]) ?? items.find(p => p.images[0]);
