@@ -139,6 +139,31 @@ const VENDOR_OVERRIDES: Record<string, GenericCategoryKey> = {
 // text or guessing off the title. The keyword matching below only kicks
 // in as a fallback for products with no collection that matches any of
 // these categories (or with no collections at all).
+// Exact-match real Shopify collection title (lowercased) -> category.
+// Checked FIRST, ahead of the fuzzy keyword-against-collection-text pass
+// below. The fuzzy pass can miss a collection whose actual title doesn't
+// happen to contain one of the RULES keywords — e.g. "Phụ Kiện Di Động"
+// (78 products: Native, SHARGE) contains none of the phu-kien-di-dong
+// rule's keywords, so those products were silently falling through to a
+// less reliable productType/title guess instead of using this curated,
+// verified-in-Shopify-Admin collection directly.
+//
+// 'Khác' is intentionally excluded — it's a genuine mixed-vendor catch-all
+// (BackBone, Cabasse, +10 more), and several of those vendors belong in
+// more specific categories (e.g. BackBone -> Gaming via the RULES keyword
+// list below), so force-mapping the whole collection to 'khac' would lose
+// that. Products in 'Khác' still fall through to the fuzzy pass, vendor
+// overrides, and title/type keywords exactly as before.
+const COLLECTION_TO_GENERIC_CATEGORY: Record<string, GenericCategoryKey> = {
+  'phụ kiện du lịch': 'phu-kien-du-lich',
+  'phụ kiện laptop': 'phu-kien-laptop',
+  'micro': 'micro',
+  'phụ kiện di động': 'phu-kien-di-dong',
+  'tai nghe': 'tai-nghe',
+  'sức khỏe làm đẹp': 'suc-khoe-lam-dep',
+  'thể thao': 'the-thao',
+};
+
 export function mapGenericCategory(
   productType: string,
   title?: string,
@@ -146,6 +171,10 @@ export function mapGenericCategory(
   collections?: string[]
 ): GenericCategoryKey {
   if (collections && collections.length > 0) {
+    for (const c of collections) {
+      const exactMatch = COLLECTION_TO_GENERIC_CATEGORY[c.trim().toLowerCase()];
+      if (exactMatch) return exactMatch;
+    }
     const collectionText = collections.join(' ').toLowerCase();
     for (const rule of RULES) {
       if (rule.keywords.some(k => collectionText.includes(k))) return rule.key;

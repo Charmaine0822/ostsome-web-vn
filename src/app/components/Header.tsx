@@ -6,8 +6,7 @@ import { useCart } from './CartContext';
 import { useProducts } from '../hooks/useProducts';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
-import type { GenericCategoryKey } from '../data/genericCategories';
-import { NAV_CATEGORIES } from '../data/navCategories';
+import { GENERIC_CATEGORIES, type GenericCategoryKey } from '../data/genericCategories';
 
 type HeaderProps = {
   onNavToProducts?: () => void;
@@ -15,9 +14,6 @@ type HeaderProps = {
   onNavToBrands?: () => void;
   onNavToCategory?: (category: string) => void;
   onNavToGenericCategory?: (category: GenericCategoryKey) => void;
-  // Special link for the "Danh Mục Sản Phẩm" nav item — routes to the
-  // homepage category grid instead of a filtered NavCategoryPage.
-  onNavToCategoryGrid?: () => void;
   onSelectProduct?: (product: Product) => void;
   onSearchNavigate?: (query: string) => void;
   onNavToLogin?: () => void;
@@ -25,6 +21,7 @@ type HeaderProps = {
   onLogout?: () => void;
   currentPage?: string;
   currentNavCategory?: string | null;
+  currentGenericCategory?: string | null;
 };
 
 const announcementMessages = [
@@ -33,7 +30,7 @@ const announcementMessages = [
   "🔥 Latest of the Latest",
 ];
 
-export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCategory, onNavToGenericCategory, onNavToCategoryGrid, onSelectProduct, onSearchNavigate, onNavToLogin, onNavToAccount, onLogout, currentPage, currentNavCategory }: HeaderProps) {
+export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCategory, onNavToGenericCategory, onSelectProduct, onSearchNavigate, onNavToLogin, onNavToAccount, onLogout, currentPage, currentNavCategory, currentGenericCategory }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,15 +86,9 @@ export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCat
     }
   };
 
-  function handleMenuNavCategory(key: string) {
+  function handleMenuGenericCategory(key: GenericCategoryKey) {
     setMenuOpen(false);
-    // "Danh Mục Sản Phẩm" ('Mobile Creator' key) goes to the homepage
-    // category grid, not a filtered category page — see onNavToCategoryGrid.
-    if (key === 'Mobile Creator') {
-      onNavToCategoryGrid?.();
-      return;
-    }
-    onNavToCategory?.(key);
+    onNavToGenericCategory?.(key);
   }
 
   useEffect(() => {
@@ -378,12 +369,12 @@ export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCat
               >
                 Tất Cả Sản Phẩm
               </button>
-              {NAV_CATEGORIES.map(cat => (
+              {GENERIC_CATEGORIES.map(cat => (
                 <button
                   key={cat.key}
-                  onClick={() => cat.key === 'Mobile Creator' ? onNavToCategoryGrid?.() : onNavToCategory?.(cat.key)}
+                  onClick={() => onNavToGenericCategory?.(cat.key)}
                   className={`whitespace-nowrap hover:text-[#F16C10] transition-colors ${
-                    currentPage === 'nav-category' && currentNavCategory === cat.key ? 'text-[#F16C10] font-semibold' : ''
+                    currentPage === 'generic-category' && currentGenericCategory === cat.key ? 'text-[#F16C10] font-semibold' : ''
                   }`}
                 >
                   {cat.label}
@@ -588,12 +579,12 @@ export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCat
               <p className="px-5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                 Danh Mục Sản Phẩm
               </p>
-              {NAV_CATEGORIES.map(cat => (
+              {GENERIC_CATEGORIES.map(cat => (
                 <button
                   key={cat.key}
-                  onClick={() => handleMenuNavCategory(cat.key)}
+                  onClick={() => handleMenuGenericCategory(cat.key)}
                   className={`w-full text-left px-5 py-3 text-sm font-medium hover:bg-neutral-50 transition ${
-                    currentPage === 'nav-category' && currentNavCategory === cat.key ? 'text-[#F16C10] font-semibold' : 'text-black'
+                    currentPage === 'generic-category' && currentGenericCategory === cat.key ? 'text-[#F16C10] font-semibold' : 'text-black'
                   }`}
                 >
                   {cat.label}

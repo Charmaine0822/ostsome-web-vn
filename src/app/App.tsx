@@ -337,25 +337,6 @@ function AppInner() {
   const handleNavToHome = () => goTo({ page: 'home' });
   const handleNavToBrands = () => goTo({ page: 'brands' });
 
-  // "Danh Mục Sản Phẩm" ("Product Categories") in the nav bar is a
-  // generic browse-all-categories link, not a filtered product page like
-  // the other 6 nav categories — clicking it should land on the homepage
-  // category grid, not a NavCategoryPage filtered to a single navCategory.
-  const handleNavToCategoryGrid = () => {
-    if (page === 'home') {
-      document.getElementById('category-grid')?.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
-    goTo({ page: 'home' }, { scroll: false });
-    // Wait one frame for the home page (and CategoryGrid) to actually
-    // mount before trying to scroll to it.
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        document.getElementById('category-grid')?.scrollIntoView({ behavior: 'smooth' });
-      }, 50);
-    });
-  };
-
   const handleSearchNavigate = (query: string) => {
     goTo({ page: 'products', search: query });
   };
@@ -395,7 +376,6 @@ function AppInner() {
           onNavToBrands={handleNavToBrands}
           onNavToCategory={handleNavToNavCategory}
           onNavToGenericCategory={handleNavToGenericCategory}
-          onNavToCategoryGrid={handleNavToCategoryGrid}
           onSelectProduct={handleSelectProduct}
           onSearchNavigate={handleSearchNavigate}
           onNavToLogin={() => {
@@ -408,15 +388,14 @@ function AppInner() {
           onLogout={() => goTo({ page: 'home' })}
           currentPage={page}
           currentNavCategory={selectedNavCategory}
+          currentGenericCategory={selectedGenericCategory}
         />
       )}
 
       {page === 'home' && (
         <>
           <Hero onSelectProduct={handleSelectProduct} />
-          <div id="category-grid">
-            <CategoryGrid onNavToCategory={handleNavToNavCategory} />
-          </div>
+          <CategoryGrid onNavToGenericCategory={handleNavToGenericCategory} />
           <FlashSaleSection
             onSelectProduct={handleSelectProduct}
             onViewAll={() => goTo({ page: 'flash-sale' })}
