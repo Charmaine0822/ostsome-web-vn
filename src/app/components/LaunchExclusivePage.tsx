@@ -3,24 +3,7 @@ import { useProducts } from '../hooks/useProducts';
 import type { Product } from '../data/products';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
-
-// One entry per unique discount — colours with identical discount collapsed into one card
-interface DealConfig {
-  handle: string;
-  label: string;
-  name: string;
-  srp: number;
-  promo: number;
-}
-
-// All 5 launch exclusive deals at a flat 15% off SRP, from real VN catalog prices
-const ALL_DEALS: DealConfig[] = [
-  { handle: 'may-massage-b\u1EAFp-chan-nen-khi-recoveryair-jetboots', label: 'THERABODY', name: 'RecoveryAir JetBoots',        srp: 24890000, promo: 21157000 },
-  { handle: 'box-di-d\u1ED9ng-ssd-m2-nvme-gen4x4-satechi-usb4-pro',   label: 'SATECHI',   name: 'USB4 PRO SSD Enclosure',      srp: 2990000,  promo: 2542000  },
-  { handle: 'micro-thu-am-shure-mv7-plus',                            label: 'SHURE',     name: 'MV7+ Podcast Mic',            srp: 10100000, promo: 8585000  },
-  { handle: 'sung-massage-theragun-pro-plus',                         label: 'THERABODY', name: 'Theragun Pro Plus',           srp: 18890000, promo: 16057000 },
-  { handle: 'satechi-m1-wireless-mouse',                              label: 'SATECHI',   name: 'M1 Wireless Mouse',           srp: 790000,   promo: 672000   },
-];
+import { getProgramItems, getMaxDiscountPct } from '../data/promoPrograms';
 
 type Props = {
   onBack?: () => void;
@@ -32,6 +15,10 @@ export function LaunchExclusivePage({ onBack, onSelectProduct, onJoinFost }: Pro
   const { products, loading } = useProducts();
   const { user } = useAuth();
   const isFostMember = Boolean(user);
+
+  // Every product with an Early Bird SKU in promoPrograms.ts, at sheet prices.
+  const earlyBird = getProgramItems(products, 'early-bird');
+  const maxPct = getMaxDiscountPct(earlyBird);
 
   return (
     <div className="min-h-screen bg-white">
@@ -49,20 +36,20 @@ export function LaunchExclusivePage({ onBack, onSelectProduct, onJoinFost }: Pro
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
               <div className="inline-flex items-center gap-1.5 bg-[#F16C10] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-                ▶ Ưu Đãi Ra Mắt
+                ▶ Early Bird · Ưu Đãi Mua Sớm
               </div>
               <h1 className="text-4xl md:text-6xl font-black uppercase leading-none mb-3">
                 Mua Sớm.<br />Nhận Giá Tốt Nhất.
               </h1>
               <p className="text-neutral-400 text-sm md:text-base max-w-lg">
-                Khách hàng mua sớm trên Ostsome được hưởng ưu đãi ra mắt độc quyền trên 5 thương hiệu.
+                Khách hàng mua sớm trên Ostsome được hưởng giá ưu đãi độc quyền cho sản phẩm mới.
                 Mua sớm, tiết kiệm nhiều hơn — thời gian có hạn, đến khi hết hàng.
               </p>
             </div>
             <div className="text-left md:text-right shrink-0">
               <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">Ưu Đãi Sớm</div>
               <div className="text-6xl md:text-7xl font-black text-[#F16C10] leading-none">Đến</div>
-              <div className="text-6xl md:text-7xl font-black text-white leading-none">15%</div>
+              <div className="text-6xl md:text-7xl font-black text-white leading-none">{maxPct}%</div>
             </div>
           </div>
         </div>
@@ -83,23 +70,26 @@ export function LaunchExclusivePage({ onBack, onSelectProduct, onJoinFost }: Pro
               <div key={i} className="bg-neutral-100 rounded-2xl aspect-[3/4] animate-pulse" />
             ))}
           </div>
+        ) : earlyBird.length === 0 ? (
+          <p className="text-center text-sm text-neutral-500 py-20">
+            Hiện chưa có ưu đãi mua sớm. Tham gia FOST để là người đầu tiên biết khi có ưu đãi mới!
+          </p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
-            {ALL_DEALS.map((deal, idx) => {
-              const product = products.find(p => p.handle === deal.handle);
-              if (!product) return null;
-              const pct = Math.round(((deal.srp - deal.promo) / deal.srp) * 100);
-              const saving = (deal.srp - deal.promo).toLocaleString('vi-VN');
+            {earlyBird.map(({ product, promo }) => {
+              const rrp = promo.rrp;
+              const pct = promo.pct;
+              const saving = (rrp - promo.price).toLocaleString('vi-VN');
               return (
                 <div
-                  key={`${deal.handle}-${idx}`}
+                  key={product.handle}
                   onClick={() => onSelectProduct?.(product)}
                   className="bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
                 >
                   <div className="relative aspect-square bg-neutral-50 overflow-hidden">
                     <img
                       src={product.images?.[0]}
-                      alt={deal.name}
+                      alt={product.title}
                       className="w-full h-full object-contain p-4 group-hover:scale-105 transition duration-500"
                       onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'; }}
                     />
@@ -108,8 +98,8 @@ export function LaunchExclusivePage({ onBack, onSelectProduct, onJoinFost }: Pro
                     </div>
                   </div>
                   <div className="p-3 md:p-4">
-                    <p className="text-[9px] font-bold text-[#F16C10] uppercase tracking-widest mb-1">{deal.label}</p>
-                    <h3 className="text-xs md:text-sm font-bold text-black line-clamp-2 mb-2">{deal.name}</h3>
+                    <p className="text-[9px] font-bold text-[#F16C10] uppercase tracking-widest mb-1">{product.vendor}</p>
+                    <h3 className="text-xs md:text-sm font-bold text-black line-clamp-2 mb-2">{product.title}</h3>
                     <div className="flex items-center gap-0.5 mb-1">
                       {[1, 2, 3, 4, 5].map(s => (
                         <Star key={s} size={10} className={s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />
@@ -117,17 +107,17 @@ export function LaunchExclusivePage({ onBack, onSelectProduct, onJoinFost }: Pro
                     </div>
                     {isFostMember ? (
                       <>
-                        <span className="text-xs text-neutral-400 line-through block">{deal.srp.toLocaleString('vi-VN')}₫</span>
+                        <span className="text-xs text-neutral-400 line-through block">{rrp.toLocaleString('vi-VN')}₫</span>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-base font-black text-[#F16C10]">{getFostPrice(deal.promo).toLocaleString('vi-VN')}₫</span>
+                          <span className="text-base font-black text-[#F16C10]">{getFostPrice(promo.price).toLocaleString('vi-VN')}₫</span>
                         </div>
-                        <p className="text-[10px] text-green-600 font-semibold mt-0.5">Bạn tiết kiệm {(deal.srp - getFostPrice(deal.promo)).toLocaleString('vi-VN')}₫</p>
+                        <p className="text-[10px] text-green-600 font-semibold mt-0.5">Bạn tiết kiệm {(rrp - getFostPrice(promo.price)).toLocaleString('vi-VN')}₫</p>
                       </>
                     ) : (
                       <>
-                        <span className="text-xs text-neutral-400 line-through block">{deal.srp.toLocaleString('vi-VN')}₫</span>
+                        <span className="text-xs text-neutral-400 line-through block">{rrp.toLocaleString('vi-VN')}₫</span>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-base font-black text-[#F16C10]">{deal.promo.toLocaleString('vi-VN')}₫</span>
+                          <span className="text-base font-black text-[#F16C10]">{promo.price.toLocaleString('vi-VN')}₫</span>
                         </div>
                         <p className="text-[10px] text-green-600 font-semibold mt-0.5">Bạn tiết kiệm {saving}₫</p>
                       </>

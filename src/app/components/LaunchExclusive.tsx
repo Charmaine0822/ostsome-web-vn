@@ -3,24 +3,7 @@ import type { Product } from '../data/products';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
 import { Star } from 'lucide-react';
-
-// Exact figures from brand manager sheet
-// handle → { srp, promo } — SRP and promo are the sheet values, NOT products.ts price
-interface DealConfig {
-  handle: string;
-  srp: number;
-  promo: number;
-  label: string; // display vendor name
-}
-
-// Same 5 launch exclusive deals as LaunchExclusivePage.tsx, flat 15% off SRP
-const FEATURED_DEALS: DealConfig[] = [
-  { handle: 'may-massage-b\u1EAFp-chan-nen-khi-recoveryair-jetboots', srp: 24890000, promo: 21157000, label: 'THERABODY' },
-  { handle: 'box-di-d\u1ED9ng-ssd-m2-nvme-gen4x4-satechi-usb4-pro',   srp: 2990000,  promo: 2542000,  label: 'SATECHI'   },
-  { handle: 'micro-thu-am-shure-mv7-plus',                            srp: 10100000, promo: 8585000,  label: 'SHURE'     },
-  { handle: 'sung-massage-theragun-pro-plus',                         srp: 18890000, promo: 16057000, label: 'THERABODY' },
-  { handle: 'satechi-m1-wireless-mouse',                              srp: 790000,   promo: 672000,   label: 'SATECHI'   },
-];
+import { getProgramItems, getMaxDiscountPct } from '../data/promoPrograms';
 
 type Props = {
   onSelectProduct?: (p: Product) => void;
@@ -32,6 +15,14 @@ export function LaunchExclusive({ onSelectProduct, onViewAll }: Props) {
   const { user } = useAuth();
   const isFostMember = Boolean(user);
 
+  // Early Bird SKUs from promoPrograms.ts (Mr. Boh's VN pricing sheet).
+  const earlyBird = getProgramItems(products, 'early-bird');
+  const featured = earlyBird.slice(0, 5);
+  const maxPct = getMaxDiscountPct(earlyBird);
+
+  // Nothing matched yet (or still loading) — hide the section.
+  if (featured.length === 0) return null;
+
   return (
     <section className="py-8 md:py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
@@ -40,7 +31,7 @@ export function LaunchExclusive({ onSelectProduct, onViewAll }: Props) {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-[#F16C10] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">
-                ▶ Ưu Đãi Ra Mắt
+                ▶ Early Bird · Ưu Đãi Mua Sớm
               </span>
             </div>
             <h2 className="text-[26px] md:text-4xl font-black text-black uppercase leading-tight">
@@ -51,7 +42,7 @@ export function LaunchExclusive({ onSelectProduct, onViewAll }: Props) {
             </p>
           </div>
           <div className="hidden md:flex flex-col items-end text-right shrink-0 ml-6">
-            <span className="text-4xl font-black text-[#F16C10]">Đến 15%</span>
+            <span className="text-4xl font-black text-[#F16C10]">Đến {maxPct}%</span>
             <span className="text-xs text-neutral-400 uppercase tracking-widest">Ưu Đãi Sớm</span>
             {onViewAll && (
               <button
@@ -66,13 +57,12 @@ export function LaunchExclusive({ onSelectProduct, onViewAll }: Props) {
 
         {/* Grid */}
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory md:grid md:grid-cols-3 lg:grid-cols-5 md:gap-5 md:overflow-visible md:mx-0 md:px-0">
-          {FEATURED_DEALS.map(deal => {
-            const product = products.find(p => p.handle === deal.handle);
-            if (!product) return null;
-            const pct = Math.round(((deal.srp - deal.promo) / deal.srp) * 100);
+          {featured.map(({ product, promo }) => {
+            const rrp = promo.rrp;
+            const pct = promo.pct;
             return (
               <div
-                key={deal.handle}
+                key={product.handle}
                 onClick={() => onSelectProduct?.(product)}
                 className="shrink-0 w-[46%] sm:w-52 md:w-auto snap-start bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
               >
@@ -88,7 +78,7 @@ export function LaunchExclusive({ onSelectProduct, onViewAll }: Props) {
                   </div>
                 </div>
                 <div className="p-3 md:p-4">
-                  <p className="text-[9px] md:text-[10px] font-bold text-[#F16C10] uppercase tracking-widest mb-1">{deal.label}</p>
+                  <p className="text-[9px] md:text-[10px] font-bold text-[#F16C10] uppercase tracking-widest mb-1">{product.vendor}</p>
                   <h3 className="text-xs md:text-sm font-bold text-black line-clamp-2 mb-2">{product.title}</h3>
                   <div className="flex items-center gap-0.5 mb-1">
                     {[1, 2, 3, 4, 5].map(s => (
@@ -97,13 +87,13 @@ export function LaunchExclusive({ onSelectProduct, onViewAll }: Props) {
                   </div>
                   {isFostMember ? (
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-neutral-400 line-through">{deal.srp.toLocaleString('vi-VN')}₫</span>
-                      <span className="text-base md:text-lg font-black text-[#F16C10]">{getFostPrice(deal.promo).toLocaleString('vi-VN')}₫</span>
+                      <span className="text-xs text-neutral-400 line-through">{rrp.toLocaleString('vi-VN')}₫</span>
+                      <span className="text-base md:text-lg font-black text-[#F16C10]">{getFostPrice(promo.price).toLocaleString('vi-VN')}₫</span>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-neutral-400 line-through">{deal.srp.toLocaleString('vi-VN')}₫</span>
-                      <span className="text-base md:text-lg font-black text-[#F16C10]">{deal.promo.toLocaleString('vi-VN')}₫</span>
+                      <span className="text-xs text-neutral-400 line-through">{rrp.toLocaleString('vi-VN')}₫</span>
+                      <span className="text-base md:text-lg font-black text-[#F16C10]">{promo.price.toLocaleString('vi-VN')}₫</span>
                     </div>
                   )}
                 </div>

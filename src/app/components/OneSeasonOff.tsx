@@ -3,33 +3,7 @@ import type { Product } from '../data/products';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
 import { Star } from 'lucide-react';
-
-interface ClearanceDeal {
-  handle: string;
-  label: string;
-  name: string;
-  srp: number;
-  promo: number;
-}
-
-// All 6 One Season Off deals at a flat 50% off SRP, from real VN catalog prices
-const CLEARANCE_DEALS: ClearanceDeal[] = [
-  { handle: 'satechi-165w-usb-c-4-port-pd-gan-charger', label: 'SATECHI',     name: 'USB-C 165W PD 4-Port GaN Charger',   srp: 2490000, promo: 1245000 },
-  { handle: 'satechi-thunderbolt-4-pro-cable',           label: 'SATECHI',     name: 'Thunderbolt 4 Pro Cable',            srp: 1190000, promo: 595000  },
-  { handle: 'satechi-stand-and-hub-for-mac-mini',         label: 'SATECHI',     name: 'Stand & Hub for Mac Mini',           srp: 1690000, promo: 845000  },
-  { handle: 'sp-phone-case-spc-iphone-15-pro-max',        label: 'SP CONNECT',  name: 'SPC+ Phone Case — iPhone 15 Pro Max', srp: 950000,  promo: 475000  },
-  { handle: 'sp-phone-case-spc-iphone-15',                label: 'SP CONNECT',  name: 'SPC+ Phone Case — iPhone 15',         srp: 950000,  promo: 475000  },
-  { handle: 'shure-aonic-40-headphone',                   label: 'SHURE',       name: 'Aonic 40 Wireless ANC Headphones',   srp: 7700000, promo: 3850000 },
-];
-
-const HOMEPAGE_HANDLES = [
-  'satechi-165w-usb-c-4-port-pd-gan-charger',
-  'satechi-thunderbolt-4-pro-cable',
-  'satechi-stand-and-hub-for-mac-mini',
-  'sp-phone-case-spc-iphone-15-pro-max',
-  'sp-phone-case-spc-iphone-15',
-  'shure-aonic-40-headphone',
-];
+import { getProgramItems, getMaxDiscountPct } from '../data/promoPrograms';
 
 type Props = {
   onSelectProduct?: (p: Product) => void;
@@ -41,17 +15,19 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
   const { user } = useAuth();
   const isFostMember = Boolean(user);
 
-  const homepageDeals = HOMEPAGE_HANDLES
-    .map(h => {
-      const deal = CLEARANCE_DEALS.find(d => d.handle === h);
-      const product = products.find(p => p.handle === h);
-      return deal && product ? { deal, product } : null;
-    })
-    .filter(Boolean) as { deal: ClearanceDeal; product: Product }[];
+  // Clearance SKUs from promoPrograms.ts (Mr. Boh's VN pricing sheet).
+  // Homepage shows the 6 biggest in-stock discounts; /clearance shows all.
+  const clearance = getProgramItems(products, 'clearance');
+  const homepageDeals = clearance.filter(i => i.product.availableForSale).slice(0, 6);
+  const maxPct = getMaxDiscountPct(clearance);
+
+  // Nothing matched yet (or still loading) — hide the section rather than
+  // showing an empty block.
+  if (homepageDeals.length === 0) return null;
 
   const trustItems = [
     { icon: '🏷️', title: 'CÔNG NGHỆ ĐỘC QUYỀN', sub: 'Thương hiệu lớn. Tiết kiệm thật.' },
-    { icon: '%',   title: 'GIÁ KHÔNG THỂ TỐT HƠN', sub: 'Giảm đến 50% so với giá bán lẻ gốc.' },
+    { icon: '%',   title: 'GIÁ KHÔNG THỂ TỐT HƠN', sub: `Giảm đến ${maxPct}% so với giá bán lẻ gốc.` },
     { icon: '⏱️', title: 'ĐẾN KHI HẾT HÀNG', sub: 'Hết là hết, không còn cơ hội.' },
   ];
 
@@ -69,8 +45,8 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
             <div className="relative flex flex-col justify-center py-5 shrink-0 overflow-hidden" style={{ width: 300 }}>
               {/* Ghost watermark */}
               <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
-                <span className="font-black absolute" style={{ fontSize: '13rem', color: 'rgba(241,108,16,0.055)', right: '-2.5rem', top: '50%', transform: 'translateY(-50%)', letterSpacing: '-0.05em', lineHeight: 1 }}>50%</span>
-                <span className="font-black absolute" style={{ fontSize: '8rem', color: 'rgba(241,108,16,0.11)', right: '-0.5rem', top: '50%', transform: 'translateY(-44%) rotate(-7deg)', letterSpacing: '-0.05em', lineHeight: 1 }}>50%</span>
+                <span className="font-black absolute" style={{ fontSize: '13rem', color: 'rgba(241,108,16,0.055)', right: '-2.5rem', top: '50%', transform: 'translateY(-50%)', letterSpacing: '-0.05em', lineHeight: 1 }}>{maxPct}%</span>
+                <span className="font-black absolute" style={{ fontSize: '8rem', color: 'rgba(241,108,16,0.11)', right: '-0.5rem', top: '50%', transform: 'translateY(-44%) rotate(-7deg)', letterSpacing: '-0.05em', lineHeight: 1 }}>{maxPct}%</span>
               </div>
               <div className="relative z-10 flex flex-col gap-4">
                 <p className="text-xs font-black uppercase tracking-[0.25em] flex items-center gap-1.5" style={{ color: '#F16C10' }}>🔥 Xả Kho</p>
@@ -84,7 +60,7 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
                     <div className="flex flex-col font-black uppercase" style={{ fontSize: '0.65rem', color: '#111111', lineHeight: 1.3, paddingTop: '0.7rem' }}>
                       <span>ĐẾN</span>
                     </div>
-                    <span className="font-black" style={{ fontSize: '4.5rem', color: '#F16C10', lineHeight: 1 }}>50%</span>
+                    <span className="font-black" style={{ fontSize: '4.5rem', color: '#F16C10', lineHeight: 1 }}>{maxPct}%</span>
                     <span className="font-black uppercase self-end" style={{ fontSize: '0.85rem', color: '#111111', paddingBottom: '0.4rem' }}>GIẢM</span>
                   </div>
                   <div className="flex-shrink-0 flex items-center justify-center rounded-full border-[3px]" style={{ width: 76, height: 76, borderColor: '#111111', transform: 'rotate(-10deg)' }}>
@@ -106,17 +82,17 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
             {/* RIGHT — 3×2 grid, fills full height */}
             <div className="flex-1 py-5">
               <div className="grid gap-3 h-full" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'repeat(2, 1fr)' }}>
-                {homepageDeals.map(({ deal, product }) => {
-                  const pct = Math.round(((deal.srp - deal.promo) / deal.srp) * 100);
+                {homepageDeals.map(({ product, promo }) => {
+                  const pct = promo.pct;
                   return (
-                    <div key={deal.handle} onClick={() => onSelectProduct?.(product)} className="bg-white rounded-xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-row">
+                    <div key={product.handle} onClick={() => onSelectProduct?.(product)} className="bg-white rounded-xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-row">
                       <div className="relative bg-neutral-50 overflow-hidden shrink-0" style={{ width: '45%' }}>
-                        <img src={product.images[0]} alt={deal.name} className="w-full h-full object-contain p-3 group-hover:scale-105 transition duration-500" onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'; }} />
-                        <span className="absolute top-2 left-2 text-white font-black px-2.5 py-1 rounded-full" style={{ fontSize: '0.75rem', backgroundColor: '#F16C10' }}>-{pct}%</span>
+                        <img src={product.images[0]} alt={product.title} className="w-full h-full object-contain p-3 group-hover:scale-105 transition duration-500" onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'; }} />
+                        <span className="absolute top-2 left-2 text-white font-black px-2.5 py-1 rounded-full" style={{ fontSize: '0.75rem', backgroundColor: '#F16C10' }}>{pct > 0 ? `-${pct}%` : 'XẢ KHO'}</span>
                       </div>
                       <div className="flex flex-col justify-center p-3 flex-1 min-w-0">
-                        <p className="font-bold uppercase tracking-widest mb-1 truncate" style={{ fontSize: '0.58rem', color: '#6F6A63' }}>{deal.label}</p>
-                        <h3 className="font-bold line-clamp-2 mb-2 leading-snug" style={{ fontSize: '0.78rem', color: '#111111' }}>{deal.name}</h3>
+                        <p className="font-bold uppercase tracking-widest mb-1 truncate" style={{ fontSize: '0.58rem', color: '#6F6A63' }}>{product.vendor}</p>
+                        <h3 className="font-bold line-clamp-2 mb-2 leading-snug" style={{ fontSize: '0.78rem', color: '#111111' }}>{product.title}</h3>
                         <div className="flex items-center gap-0.5 mb-1">
                           {[1, 2, 3, 4, 5].map(s => (
                             <Star key={s} size={9} className={s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />
@@ -124,13 +100,13 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
                         </div>
                         {isFostMember ? (
                           <>
-                            <span className="line-through block" style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{deal.srp.toLocaleString('vi-VN')}₫</span>
-                            <span className="font-black block" style={{ fontSize: '1rem', color: '#F16C10' }}>{getFostPrice(deal.promo).toLocaleString('vi-VN')}₫</span>
+                            <span className="line-through block" style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>
+                            <span className="font-black block" style={{ fontSize: '1rem', color: '#F16C10' }}>{getFostPrice(promo.price).toLocaleString('vi-VN')}₫</span>
                           </>
                         ) : (
                           <>
-                            <span className="line-through block" style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{deal.srp.toLocaleString('vi-VN')}₫</span>
-                            <span className="font-black block" style={{ fontSize: '1rem', color: '#F16C10' }}>{deal.promo.toLocaleString('vi-VN')}₫</span>
+                            <span className="line-through block" style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>
+                            <span className="font-black block" style={{ fontSize: '1rem', color: '#F16C10' }}>{promo.price.toLocaleString('vi-VN')}₫</span>
                           </>
                         )}
                       </div>
@@ -173,7 +149,7 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
           <div className="shrink-0 ml-4 text-right">
             <div className="flex items-start justify-end gap-0.5 leading-none">
               <span className="font-black text-[0.5rem] uppercase mt-1" style={{ color: '#111111' }}>ĐẾN</span>
-              <span className="font-black" style={{ fontSize: '3rem', color: '#F16C10', lineHeight: 1 }}>50%</span>
+              <span className="font-black" style={{ fontSize: '3rem', color: '#F16C10', lineHeight: 1 }}>{maxPct}%</span>
             </div>
             <div className="text-[0.5rem] font-black uppercase" style={{ color: '#111111' }}>GIẢM · SỐ LƯỢNG CÓ HẠN</div>
           </div>
@@ -182,17 +158,17 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
         {/* Mobile product strip — horizontal scroll, ~2.5 cards visible */}
         <div className="px-4 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           <div className="flex gap-3" style={{ width: 'max-content' }}>
-            {homepageDeals.map(({ deal, product }) => {
-              const pct = Math.round(((deal.srp - deal.promo) / deal.srp) * 100);
+            {homepageDeals.map(({ product, promo }) => {
+              const pct = promo.pct;
               return (
-                <div key={deal.handle} onClick={() => onSelectProduct?.(product)} className="bg-white rounded-xl overflow-hidden hover:shadow-md cursor-pointer flex-shrink-0" style={{ width: 140 }}>
+                <div key={product.handle} onClick={() => onSelectProduct?.(product)} className="bg-white rounded-xl overflow-hidden hover:shadow-md cursor-pointer flex-shrink-0" style={{ width: 140 }}>
                   <div className="relative bg-neutral-50 overflow-hidden" style={{ aspectRatio: '1/1' }}>
-                    <img src={product.images[0]} alt={deal.name} className="w-full h-full object-contain p-3" onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'; }} />
-                    <span className="absolute top-1.5 left-1.5 text-white font-black px-2 py-0.5 rounded-full" style={{ fontSize: '0.7rem', backgroundColor: '#F16C10' }}>-{pct}%</span>
+                    <img src={product.images[0]} alt={product.title} className="w-full h-full object-contain p-3" onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'; }} />
+                    <span className="absolute top-1.5 left-1.5 text-white font-black px-2 py-0.5 rounded-full" style={{ fontSize: '0.7rem', backgroundColor: '#F16C10' }}>{pct > 0 ? `-${pct}%` : 'XẢ KHO'}</span>
                   </div>
                   <div className="p-2.5">
-                    <p className="font-bold uppercase truncate mb-0.5" style={{ fontSize: '0.55rem', color: '#6F6A63' }}>{deal.label}</p>
-                    <h3 className="font-bold line-clamp-2 leading-snug mb-1.5" style={{ fontSize: '0.72rem', color: '#111111' }}>{deal.name}</h3>
+                    <p className="font-bold uppercase truncate mb-0.5" style={{ fontSize: '0.55rem', color: '#6F6A63' }}>{product.vendor}</p>
+                    <h3 className="font-bold line-clamp-2 leading-snug mb-1.5" style={{ fontSize: '0.72rem', color: '#111111' }}>{product.title}</h3>
                     <div className="flex items-center gap-0.5 mb-1">
                       {[1, 2, 3, 4, 5].map(s => (
                         <Star key={s} size={9} className={s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />
@@ -200,13 +176,13 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
                     </div>
                     {isFostMember ? (
                       <>
-                        <span className="line-through block" style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{deal.srp.toLocaleString('vi-VN')}₫</span>
-                        <span className="font-black block" style={{ fontSize: '0.9rem', color: '#F16C10' }}>{getFostPrice(deal.promo).toLocaleString('vi-VN')}₫</span>
+                        <span className="line-through block" style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>
+                        <span className="font-black block" style={{ fontSize: '0.9rem', color: '#F16C10' }}>{getFostPrice(promo.price).toLocaleString('vi-VN')}₫</span>
                       </>
                     ) : (
                       <>
-                        <span className="line-through block" style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{deal.srp.toLocaleString('vi-VN')}₫</span>
-                        <span className="font-black block" style={{ fontSize: '0.9rem', color: '#F16C10' }}>{deal.promo.toLocaleString('vi-VN')}₫</span>
+                        <span className="line-through block" style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>
+                        <span className="font-black block" style={{ fontSize: '0.9rem', color: '#F16C10' }}>{promo.price.toLocaleString('vi-VN')}₫</span>
                       </>
                     )}
                   </div>
@@ -239,6 +215,3 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
     </section>
   );
 }
-
-export { CLEARANCE_DEALS };
-export type { ClearanceDeal };

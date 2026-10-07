@@ -24,6 +24,7 @@ export type Product = {
   bodyHtml: string;
   availableForSale: boolean;
   collections?: string[];        // ← add this line
+  skus?: string[];
   metafields?: ProductMetafields;
 };
 

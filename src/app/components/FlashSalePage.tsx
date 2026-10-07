@@ -2,7 +2,7 @@ import { ChevronLeft, Star } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useProducts } from '../hooks/useProducts';
 import { getFostPrice } from '../data/pricing';
-import { FLASH_SALE_HANDLES, getFlashSalePrice, FLASH_SALE_DISCOUNT_PERCENT, findFlashSaleProduct } from '../data/flashSale';
+import { getProgramItems } from '../data/promoPrograms';
 import { FlashSaleHeading } from './FlashSaleCountdown';
 import type { Product } from '../data/products';
 
@@ -15,9 +15,8 @@ export function FlashSalePage({ onBack, onSelectProduct }: FlashSalePageProps) {
   const { products, loading } = useProducts();
   const { user } = useAuth();
 
-  const flashProducts = FLASH_SALE_HANDLES
-    .map(entry => findFlashSaleProduct(entry, products))
-    .filter((p): p is Product => Boolean(p));
+  // Flash Sale Daily SKUs from promoPrograms.ts (Mr. Boh's VN pricing sheet).
+  const flashProducts = getProgramItems(products, 'flash-sale');
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 md:py-10 min-h-screen">
@@ -39,9 +38,8 @@ export function FlashSalePage({ onBack, onSelectProduct }: FlashSalePageProps) {
         </div>
       ) : flashProducts.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-          {flashProducts.map(product => {
-            const flashPrice = getFlashSalePrice(product.price);
-            const displayPrice = user ? getFostPrice(flashPrice) : flashPrice;
+          {flashProducts.map(({ product, promo }) => {
+            const displayPrice = user ? getFostPrice(promo.price) : promo.price;
             return (
               <div
                 key={product.handle}
@@ -56,7 +54,7 @@ export function FlashSalePage({ onBack, onSelectProduct }: FlashSalePageProps) {
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                   <span className="absolute top-2 right-2 bg-[#F16C10] text-white text-xs font-bold px-2 py-1 rounded-full">
-                    -{FLASH_SALE_DISCOUNT_PERCENT}%
+                    -{promo.pct}%
                   </span>
                 </div>
                 <div className="p-3 md:p-4">
@@ -68,7 +66,7 @@ export function FlashSalePage({ onBack, onSelectProduct }: FlashSalePageProps) {
                     ))}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs text-neutral-400 line-through">{product.price.toLocaleString('vi-VN')}₫</span>
+                    <span className="text-xs text-neutral-400 line-through">{promo.rrp.toLocaleString('vi-VN')}₫</span>
                     <span className="text-base md:text-lg font-bold text-[#F16C10]">{displayPrice.toLocaleString('vi-VN')}₫</span>
                   </div>
                 </div>
@@ -80,7 +78,7 @@ export function FlashSalePage({ onBack, onSelectProduct }: FlashSalePageProps) {
         <div className="text-center py-24">
           <p className="text-4xl mb-4">⏰</p>
           <p className="text-lg font-semibold text-black mb-2">Không tìm thấy sản phẩm</p>
-          <p className="text-sm text-neutral-500">Kiểm tra lại handle sản phẩm trong flashSale.ts.</p>
+          <p className="text-sm text-neutral-500">Flash sale hôm nay đã hết. Quay lại vào ngày mai nhé!</p>
         </div>
       )}
     </div>

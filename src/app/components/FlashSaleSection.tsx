@@ -2,7 +2,7 @@ import { useAuth } from './AuthContext';
 import { useProducts } from '../hooks/useProducts';
 import { Star } from 'lucide-react';
 import { getFostPrice } from '../data/pricing';
-import { FLASH_SALE_HANDLES, getFlashSalePrice, FLASH_SALE_DISCOUNT_PERCENT, findFlashSaleProduct } from '../data/flashSale';
+import { getProgramItems } from '../data/promoPrograms';
 import { FlashSaleHeading } from './FlashSaleCountdown';
 import type { Product } from '../data/products';
 
@@ -11,17 +11,15 @@ type FlashSaleSectionProps = {
   onViewAll?: () => void;
 };
 
-// Homepage teaser — shows the first 3 flash sale products with a "View All"
-// link to the full FlashSalePage. Any handle in FLASH_SALE_HANDLES that
-// doesn't match a real product (wrong/unverified handle) is silently
-// skipped rather than showing a broken card.
+// Homepage teaser — shows the 3 biggest flash sale discounts with a "View
+// All" link to the full FlashSalePage. SKUs in promoPrograms.ts that don't
+// match a live Shopify product are simply skipped.
 export function FlashSaleSection({ onSelectProduct, onViewAll }: FlashSaleSectionProps) {
   const { products } = useProducts();
   const { user } = useAuth();
 
-  const flashProducts = FLASH_SALE_HANDLES
-    .map(entry => findFlashSaleProduct(entry, products))
-    .filter((p): p is Product => Boolean(p));
+  // Flash Sale Daily SKUs from promoPrograms.ts (Mr. Boh's VN pricing sheet).
+  const flashProducts = getProgramItems(products, 'flash-sale');
 
   if (flashProducts.length === 0) return null;
 
@@ -39,9 +37,8 @@ export function FlashSaleSection({ onSelectProduct, onViewAll }: FlashSaleSectio
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:mx-0 md:px-0">
-          {flashProducts.slice(0, 3).map(product => {
-            const flashPrice = getFlashSalePrice(product.price);
-            const displayPrice = user ? getFostPrice(flashPrice) : flashPrice;
+          {flashProducts.slice(0, 3).map(({ product, promo }) => {
+            const displayPrice = user ? getFostPrice(promo.price) : promo.price;
             return (
               <div
                 key={product.handle}
@@ -56,7 +53,7 @@ export function FlashSaleSection({ onSelectProduct, onViewAll }: FlashSaleSectio
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                   <span className="absolute top-2 right-2 bg-[#F16C10] text-white text-xs font-bold px-2 py-1 rounded-full">
-                    -{FLASH_SALE_DISCOUNT_PERCENT}%
+                    -{promo.pct}%
                   </span>
                 </div>
                 <div className="p-3 md:p-4">
@@ -68,7 +65,7 @@ export function FlashSaleSection({ onSelectProduct, onViewAll }: FlashSaleSectio
                     ))}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs text-neutral-400 line-through">{product.price.toLocaleString('vi-VN')}₫</span>
+                    <span className="text-xs text-neutral-400 line-through">{promo.rrp.toLocaleString('vi-VN')}₫</span>
                     <span className="text-base md:text-lg font-bold text-[#F16C10]">{displayPrice.toLocaleString('vi-VN')}₫</span>
                   </div>
                 </div>

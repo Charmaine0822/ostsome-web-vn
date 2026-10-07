@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Zap } from 'lucide-react';
-import { FLASH_SALE_END_DATE } from '../data/flashSale';
+import { getFlashSaleEndDate } from '../data/flashSale';
 
+// Daily sale — always counts down to tonight's 23:59:59 ICT, then rolls
+// over to the next day automatically, so it never shows "ended".
 function getTimeLeft() {
-  const diff = FLASH_SALE_END_DATE.getTime() - Date.now();
-  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, ended: true };
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const diff = Math.max(0, getFlashSaleEndDate().getTime() - Date.now());
+  const days = 0;
   const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
   const minutes = Math.floor((diff / (1000 * 60)) % 60);
   const seconds = Math.floor((diff / 1000) % 60);
-  return { days, hours, minutes, seconds, ended: false };
+  return { days, hours, minutes, seconds };
 }
 
 function pad(n: number) {
@@ -28,14 +29,9 @@ export function FlashSaleCountdown({ size = 'default' }: { size?: 'default' | 's
     ? 'bg-black text-white text-xs font-bold rounded px-1.5 py-1 min-w-[24px] text-center'
     : 'bg-black text-white text-sm md:text-base font-bold rounded-md px-2 py-1.5 min-w-[32px] md:min-w-[36px] text-center';
 
-  if (timeLeft.ended) {
-    return <span className="text-sm font-semibold text-neutral-400">Đã kết thúc</span>;
-  }
-
   return (
     <div className="flex items-center gap-1">
-      <span className={boxClass}>{pad(timeLeft.days)}</span>
-      <span className="text-neutral-400 font-bold">:</span>
+      <span className={`text-neutral-500 font-semibold mr-1 ${size === 'small' ? 'text-[11px]' : 'text-xs'}`}>Kết thúc sau</span>
       <span className={boxClass}>{pad(timeLeft.hours)}</span>
       <span className="text-neutral-400 font-bold">:</span>
       <span className={boxClass}>{pad(timeLeft.minutes)}</span>

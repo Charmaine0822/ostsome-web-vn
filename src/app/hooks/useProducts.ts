@@ -230,6 +230,7 @@ export function mapShopifyProduct(p: ShopifyProduct): Product {
     comparePrice,
     images: p.images.edges.map(e => e.node.url),
     collections: p.collections.edges.map(e => e.node.title),
+    skus: p.variants.edges.map(e => e.node.sku).filter((s): s is string => Boolean(s)),
     bodyHtml: p.descriptionHtml,
     availableForSale,
     metafields: mapMetafields(p.metafields),

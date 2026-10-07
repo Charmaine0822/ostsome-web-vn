@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext';
 import { fetchProductByHandle } from '../data/shopify';
 import type { ShopifyProduct } from '../data/shopify';
 import { getFostPrice } from '../data/pricing';
+import { getPromoForSku, getPromoForProduct, PROGRAM_LABELS } from '../data/promoPrograms';
 import { SOLD_COUNT_BASELINE } from '../data/soldCounts';
 import { useProducts } from '../hooks/useProducts';
 import { ProductCard } from './ProductCard';
@@ -119,16 +120,13 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
           option2Name: opts[1]?.name,
           option2Value: opts[1]?.value,
           price: parseFloat(node.price.amount),
+          sku: node.sku,
           image: node.image?.url,
         };
       })
       .filter((v): v is NonNullable<typeof v> => v !== null);
   }, [shopifyVariantNodes]);
 
-  const hasDiscount = product.comparePrice && product.comparePrice > product.price;
-  const discountPct = hasDiscount
-    ? Math.round(((product.comparePrice! - product.price) / product.comparePrice!) * 100)
-    : 0;
 
   const option1Name = variants[0]?.option1Name ?? null;
   const option2Name = variants[0]?.option2Name ?? null;
@@ -155,7 +153,23 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
     ) ?? null;
   }, [variants, selectedOption1, selectedOption2]);
 
-  const activePrice = selectedVariant ? selectedVariant.price : product.price;
+  // Clearance / Early Bird / Flash Sale price from promoPrograms.ts, by SKU.
+  // Variant chosen → that variant's promo (null if that variant isn't in a
+  // program). Single-variant product → its only SKU. Multi-variant product
+  // with nothing chosen yet → the best promo across its variants, so the
+  // page matches the card the customer just clicked.
+  const promo = selectedVariant
+    ? getPromoForSku(selectedVariant.sku)
+    : variants.length === 0
+      ? getPromoForSku(shopifyVariantNodes[0]?.sku) ?? getPromoForProduct(product)
+      : getPromoForProduct(product);
+
+  const activePrice = promo ? promo.price : selectedVariant ? selectedVariant.price : product.price;
+  const comparePrice = promo ? promo.rrp : product.comparePrice;
+  const hasDiscount = Boolean(comparePrice && comparePrice > activePrice);
+  const discountPct = hasDiscount
+    ? Math.round(((comparePrice! - activePrice) / comparePrice!) * 100)
+    : 0;
 
   const allImages = useMemo(() => {
     const variantImgs = variants
@@ -993,6 +1007,11 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
             <div className="flex items-center gap-3 mb-3">
               <span className="text-xs font-bold text-[#F16C10] uppercase tracking-widest">{product.vendor}</span>
               <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">{product.category}</span>
+              {promo && (
+                <span className="text-[10px] font-black text-white bg-[#F16C10] px-2 py-0.5 rounded-full uppercase tracking-wide">
+                  {PROGRAM_LABELS[promo.program]}
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl md:text-3xl font-bold text-black leading-tight mb-4">{product.title}</h1>
@@ -1013,7 +1032,7 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
               <div className="mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-neutral-400 line-through">
-                    {(hasDiscount ? product.comparePrice! : activePrice).toLocaleString('vi-VN')}₫
+                    {(hasDiscount ? comparePrice! : activePrice).toLocaleString('vi-VN')}₫
                   </span>
                   {hasDiscount && (
                     <span className="text-xs font-bold text-[#F16C10]">-{discountPct}%</span>
@@ -1024,14 +1043,14 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
                   <span className="text-[10px] font-bold text-white bg-[#F16C10] px-2 py-0.5 rounded-full uppercase tracking-wide">Giá FOST</span>
                 </div>
                 {hasDiscount && (
-                  <p className="text-xs text-neutral-400 mt-1">Giá gốc {product.comparePrice!.toLocaleString('vi-VN')}₫ — đã áp dụng thêm ưu đãi 5% dành cho thành viên FOST</p>
+                  <p className="text-xs text-neutral-400 mt-1">Giá gốc {comparePrice!.toLocaleString('vi-VN')}₫ — đã áp dụng thêm ưu đãi 5% dành cho thành viên FOST</p>
                 )}
               </div>
             ) : (
               <div className="mb-1">
                 {hasDiscount && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-neutral-400 line-through">{product.comparePrice!.toLocaleString('vi-VN')}₫</span>
+                    <span className="text-sm text-neutral-400 line-through">{comparePrice!.toLocaleString('vi-VN')}₫</span>
                     <span className="text-xs font-bold text-[#F16C10]">-{discountPct}%</span>
                   </div>
                 )}
