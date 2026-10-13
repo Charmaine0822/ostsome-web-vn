@@ -3,6 +3,7 @@ import { useProducts } from '../hooks/useProducts';
 import type { Product } from '../data/products';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
+import { getDisplayPricing } from '../data/displayPricing';
 import satechiImg from '../../imports/Satechi charging dock.png';
 
 // Real backup logic: only 2 of the last 3 handles tried actually existed in
@@ -141,11 +142,11 @@ export function WhatsNewThisWeek({ onShopAll, onSelectProduct }: { onShopAll?: (
                   <div className="flex items-center justify-between">
                     {isFostMember ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-base md:text-xl font-bold text-[#F16C10]">{getFostPrice(product.price).toLocaleString('vi-VN')}₫</span>
-                        <span className="text-[9px] md:text-[10px] text-neutral-400 line-through">{product.price.toLocaleString('vi-VN')}₫</span>
+                        <span className="text-base md:text-xl font-bold text-[#F16C10]">{getFostPrice(getDisplayPricing(product).price).toLocaleString('vi-VN')}₫</span>
+                        <span className="text-[9px] md:text-[10px] text-neutral-400 line-through">{getDisplayPricing(product).price.toLocaleString('vi-VN')}₫</span>
                       </div>
                     ) : (
-                      <span className="text-base md:text-xl font-bold text-black">{product.price.toLocaleString('vi-VN')}₫</span>
+                      <span className="text-base md:text-xl font-bold text-black">{getDisplayPricing(product).price.toLocaleString('vi-VN')}₫</span>
                     )}
                     <button className="text-[#F16C10] hover:text-black font-medium text-xs md:text-sm transition-colors">Xem →</button>
                   </div>

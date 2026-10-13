@@ -6,6 +6,7 @@ import { useCart } from './CartContext';
 import { useProducts } from '../hooks/useProducts';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
+import { getDisplayPricing } from '../data/displayPricing';
 import { GENERIC_CATEGORIES, HIDDEN_GENERIC_CATEGORIES, type GenericCategoryKey } from '../data/genericCategories';
 
 type HeaderProps = {
@@ -507,11 +508,11 @@ export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCat
                     </div>
                     {Boolean(user) ? (
                       <div className="flex flex-col items-end shrink-0">
-                        <span className="text-sm font-bold text-[#F16C10]">{getFostPrice(product.price).toLocaleString('vi-VN')}₫</span>
-                        <span className="text-[10px] text-neutral-400 line-through">{product.price.toLocaleString('vi-VN')}₫</span>
+                        <span className="text-sm font-bold text-[#F16C10]">{getFostPrice(getDisplayPricing(product).price).toLocaleString('vi-VN')}₫</span>
+                        <span className="text-[10px] text-neutral-400 line-through">{getDisplayPricing(product).price.toLocaleString('vi-VN')}₫</span>
                       </div>
                     ) : (
-                      <span className="text-sm font-bold text-black shrink-0">{product.price.toLocaleString('vi-VN')}₫</span>
+                      <span className="text-sm font-bold text-black shrink-0">{getDisplayPricing(product).price.toLocaleString('vi-VN')}₫</span>
                     )}
                   </button>
                 ))}

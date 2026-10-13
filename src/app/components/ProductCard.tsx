@@ -3,6 +3,7 @@ import { Eye, Star } from 'lucide-react';
 import type { Product } from '../data/products';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
+import { getDisplayPricing } from '../data/displayPricing';
 
 type ProductCardProps = {
   product: Product;
@@ -13,13 +14,8 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
   const [imgIdx, setImgIdx] = useState(0);
   const { user } = useAuth();
   const isFostMember = Boolean(user);
-  const hasDiscount = product.comparePrice && product.comparePrice > product.price;
-  const discountPct = hasDiscount
-    ? Math.round(((product.comparePrice! - product.price) / product.comparePrice!) * 100)
-    : 0;
-  // Stacks on top of any existing sale price — getFostPrice is applied to
-  // product.price, which is already the discounted price if one exists.
-  const fostPrice = getFostPrice(product.price);
+  const { price, originalPrice, hasDiscount, discountPct } = getDisplayPricing(product);
+  const fostPrice = getFostPrice(price);
   const isSoldOut = !product.availableForSale;
 
   return (
@@ -89,7 +85,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             {isFostMember ? (
               <>
                 <span className="text-xs text-neutral-400 line-through">
-                  {product.price.toLocaleString('vi-VN')}₫
+                  {price.toLocaleString('vi-VN')}₫
                 </span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-base font-bold text-[#F16C10]">
@@ -104,11 +100,11 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
               <>
                 {hasDiscount && (
                   <span className="text-xs text-neutral-400 line-through">
-                    {product.comparePrice!.toLocaleString('vi-VN')}₫
+                    {originalPrice.toLocaleString('vi-VN')}₫
                   </span>
                 )}
                 <span className="text-base font-bold text-[#F16C10]">
-                  {product.price.toLocaleString('vi-VN')}₫
+                  {price.toLocaleString('vi-VN')}₫
                 </span>
               </>
             )}

@@ -2,6 +2,7 @@ import { ChevronLeft, Star } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
+import { getDisplayPricing } from '../data/displayPricing';
 import { GENERIC_CATEGORIES, mapGenericCategory, type GenericCategoryKey } from '../data/genericCategories';
 import type { Product } from '../data/products';
 
@@ -43,16 +44,7 @@ export function CategoryProductsPage({ category, onBack, onSelectProduct }: Cate
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {matches.map(product => {
-          const hasDiscount = Boolean(product.comparePrice) && product.comparePrice! > product.price;
-          const discountPct = hasDiscount
-            ? Math.round(((product.comparePrice! - product.price) / product.comparePrice!) * 100)
-            : 0;
-          // True RRP: the pre-sale comparePrice if this product is already
-          // discounted, otherwise just the regular price. Matches
-          // ProductCard.tsx — previously this page compared the FOST price
-          // against product.price even when a sale was already active,
-          // which understated the "was" price shown to members.
-          const originalPrice = hasDiscount ? product.comparePrice! : product.price;
+          const { price, originalPrice, hasDiscount, discountPct } = getDisplayPricing(product);
           return (
             <button
               key={product.handle}
@@ -82,14 +74,14 @@ export function CategoryProductsPage({ category, onBack, onSelectProduct }: Cate
               {Boolean(user) ? (
                 <div className="flex flex-col">
                   <span className="text-xs text-neutral-400 line-through">{originalPrice.toLocaleString('vi-VN')}₫</span>
-                  <span className="text-sm font-bold text-[#F16C10]">{getFostPrice(product.price).toLocaleString('vi-VN')}₫</span>
+                  <span className="text-sm font-bold text-[#F16C10]">{getFostPrice(price).toLocaleString('vi-VN')}₫</span>
                 </div>
               ) : (
                 <div className="flex flex-col">
                   {hasDiscount && (
                     <span className="text-xs text-neutral-400 line-through">{originalPrice.toLocaleString('vi-VN')}₫</span>
                   )}
-                  <span className="text-sm font-bold text-[#F16C10]">{product.price.toLocaleString('vi-VN')}₫</span>
+                  <span className="text-sm font-bold text-[#F16C10]">{price.toLocaleString('vi-VN')}₫</span>
                 </div>
               )}
             </button>
