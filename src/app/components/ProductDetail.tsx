@@ -1,3 +1,4 @@
+import { trackViewItem } from '../data/tracking';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, ShoppingCart, Star, Shield, Truck, RefreshCw, Check, X, ZoomIn } from 'lucide-react';
 import type { Product } from '../data/products';
@@ -46,6 +47,9 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
   const [showLuckyDraw, setShowLuckyDraw] = useState(false);
 
   const { addItem, items: cartItems } = useCart();
+  useEffect(() => {
+    trackViewItem({ item_id: product.handle, item_name: product.title || product.handle, price: Number(product.price) || 0, quantity: 1 });
+  }, [product.handle]);
   const [shopifyVariants, setShopifyVariants] = useState<Record<string, string>>({});
   const [shopifyAvailability, setShopifyAvailability] = useState<Record<string, boolean>>({});
   const [shopifyQuantity, setShopifyQuantity] = useState<Record<string, number | null>>({});

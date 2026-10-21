@@ -1,3 +1,4 @@
+import { trackAddToCart, trackBeginCheckout } from '../data/tracking';
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { Product } from '../data/products';
 import { createCart, addToCart, removeFromCart, updateCartLine, getCart } from '../data/shopify';
@@ -113,6 +114,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prev, { ...incoming, qty }];
     });
+    trackAddToCart({ item_id: incoming.shopifyVariantId || incoming.product.handle, item_name: incoming.product.title || incoming.product.handle, price: incoming.variantPrice, quantity: qty });
     setIsOpen(true);
   }, []);
 
@@ -194,6 +196,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // effect above), so this no longer wipes it out if the customer
       // comes back via the logo or the browser's back button without
       // completing the purchase.
+      trackBeginCheckout(itemsWithVariants.map(item => ({
+        item_id: item.shopifyVariantId || item.product.handle,
+        item_name: item.product.title || item.product.handle,
+        price: item.variantPrice,
+        quantity: item.qty,
+      })));
       window.location.href = cart.checkoutUrl;
     } catch (err) {
       console.error('Checkout error:', err);
