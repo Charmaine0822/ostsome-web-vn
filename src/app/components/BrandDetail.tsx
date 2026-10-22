@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { fetchBrandCollectionDescription } from '../data/shopify';
 import { ChevronLeft } from 'lucide-react';
 import { ProductCard } from './ProductCard';
 import { useProducts } from '../hooks/useProducts';
@@ -22,7 +24,16 @@ export function BrandDetail({ brand, onBack, onSelectProduct }: BrandDetailProps
   // Real "history" copy where we have it (paraphrased from the live site),
   // falling back to the one-line tagline already used on the Brands grid,
   // and finally to nothing rather than invented text.
-  const copy = brandHistory[brand] ?? brandMeta[brand]?.description ?? null;
+  const [shopifyDescription, setShopifyDescription] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setShopifyDescription(null);
+    fetchBrandCollectionDescription(brand)
+      .then(description => { if (active) setShopifyDescription(description); })
+      .catch(error => console.warn('Brand collection description unavailable:', error));
+    return () => { active = false; };
+  }, [brand]);
+  const copy = shopifyDescription ?? brandHistory[brand] ?? brandMeta[brand]?.description ?? null;
 
   return (
     <section className="bg-white min-h-screen">
