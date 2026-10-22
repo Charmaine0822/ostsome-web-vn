@@ -65,6 +65,24 @@ async function storefrontFetch<T>(query: string, variables?: Record<string, unkn
   return json.data as T;
 }
 
+// Public collection descriptions used by the custom brand pages.
+export async function fetchBrandCollectionDescription(brand: string): Promise<string | null> {
+  const query = `query BrandCollections($query: String!) {
+    collections(first: 30, query: $query) {
+      nodes { title handle description }
+    }
+  }`;
+  const data = await storefrontFetch<{
+    collections: { nodes: { title: string; handle: string; description: string }[] }
+  }>(query, { query: `title:${brand}` });
+  const normalized = brand.trim().toLowerCase();
+  const matches = data.collections.nodes.filter(c =>
+    c.title.toLowerCase().startsWith(normalized) || c.handle.toLowerCase() === normalized.replace(/\s+/g, '-')
+  );
+  // The brand's full collection title can include a localized SEO suffix.
+  return matches.find(c => c.description.trim())?.description.trim() ?? null;
+}
+
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
 // Product metafields shown on the product detail page, below "About this
