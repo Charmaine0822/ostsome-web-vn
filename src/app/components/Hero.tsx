@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useProducts } from "../hooks/useProducts";
 import type { Product } from "../data/products";
-import heroBanner from "../../imports/Banner Looki.png";
+import heroBanner from "../../imports/Banner TDM Neo.jpeg";
 import banner1 from "../../imports/banner Satechi.png";
 import banner2 from "../../imports/Banner SHURE.png";
 import banner3 from "../../imports/banner Skullcandy.png";
@@ -15,7 +15,7 @@ const banners = [heroBanner, banner1, banner2, banner3, banner4];
 // no matching product exists in the VN catalog yet — that banner is
 // intentionally left unclickable rather than pointing to the wrong item.
 const bannerHandles: (string | null)[] = [
-  'looki-l1-ai-multimodal-wearable-thiết-bị-deo-ai-ghi-hinh-rảnh-tay-32g-quay-video-full-hd-1080p-3-micro-ai-tạo-vlog-comics-bộ-nhớ-32gb-bảo-mật-quyền-rieng-tư-mau-trắng', // Banner 1 "Looki L1" — confirmed real handle
+  'tai-nghe-chụp-tai-tdm-neo-hybrid-2-trong-1-xoay-thanh-loa-bluetooth', // Banner 1 "TDM Neo" — hybrid 2-in-1 headphone / Bluetooth speaker
   'satechi-165w-usb-c-4-port-pd-gan-charger', // Banner 2 "Satechi products" — generic Satechi banner, points to the flagship GaN charger
   'micro-thu-am-shure-mv7-plus', // Banner 3 "Shure MV7+"
   'tai-nghe-bluetooth-skullcandy-method-360-anc-bảo-hanh-1-nam-chống-ồn-pin-40-giờ-chống-ồn-chủ-dộng', // Banner 4 "Skullcandy Method 360 ANC" — confirmed real handle
@@ -23,7 +23,7 @@ const bannerHandles: (string | null)[] = [
 ];
 
 const bannerLabels = [
-  "Looki L1",
+  "TDM Neo",
   "Satechi",
   "Shure MV7+",
   "Skullcandy Method 360 ANC",
