@@ -16,7 +16,7 @@
 
 import type { Product } from './products';
 
-export type PromoProgram = 'clearance' | 'early-bird' | 'flash-sale';
+export type PromoProgram = 'clearance' | 'early-bird' | 'flash-sale' | 'special-offer';
 
 type PromoEntry = { program: PromoProgram; rrp: number; price: number };
 
@@ -164,6 +164,30 @@ const PROMO_PRICES: Record<string, PromoEntry> = {
   "TB-JB0004130-3A1M": { program: 'flash-sale', rrp: 35690000, price: 33905000 }, // THERABODY · Máy massage bắp chân nén khí JetBoots Pro Plus, EUUK - Regular
 };
 
+// ─── HANDLE-BASED PROMOS ─────────────────────────────────────────────────────
+// For products where the whole product (all variants) has one Shopify
+// AUTOMATIC discount and we don't have SKUs listed above. Shopify's Storefront
+// API never reflects automatic discounts in the product price, so the final
+// price has to be mirrored here for the product page / cards to show it.
+//
+// ⚠️ Keep in sync with the discount in Shopify Admin. When that discount ends,
+// delete the entry here.
+const PROMO_BY_HANDLE_RAW: Record<string, PromoEntry> = {
+  // TDM. Neo Hybrid 2-in-1 — Shopify automatic discount "10% OFF TDM. NEO"
+  'tai-nghe-chụp-tai-tdm-neo-hybrid-2-trong-1-xoay-thanh-loa-bluetooth': {
+    program: 'special-offer', rrp: 6990000, price: 6291000,
+  },
+};
+
+const normalizeHandle = (h: string) => {
+  let v = h;
+  try { v = decodeURIComponent(h); } catch { /* keep raw */ }
+  return v.normalize('NFC').trim().toLowerCase();
+};
+const PROMO_BY_HANDLE = new Map(
+  Object.entries(PROMO_BY_HANDLE_RAW).map(([h, e]) => [normalizeHandle(h), e])
+);
+
 // SKUs in Shopify sometimes differ from the sheet by case/whitespace.
 const normalizeSku = (sku: string) => sku.trim().replace(/\s+/g, ' ').toUpperCase();
 const PROMO_BY_SKU = new Map(Object.entries(PROMO_PRICES).map(([sku, e]) => [normalizeSku(sku), e]));
@@ -179,6 +203,13 @@ export function getPromoForSku(sku: string | null | undefined): Promo | null {
   return e ? withPct(e) : null;
 }
 
+/** Product-wide promo by Shopify handle (see PROMO_BY_HANDLE_RAW), or null. */
+export function getPromoForHandle(handle: string | null | undefined): Promo | null {
+  if (!handle) return null;
+  const e = PROMO_BY_HANDLE.get(normalizeHandle(handle));
+  return e ? withPct(e) : null;
+}
+
 /**
  * Best (lowest-priced) promo across a product's variants — used for cards,
  * where no variant is chosen yet. Optionally limited to one program.
@@ -189,6 +220,10 @@ export function getPromoForProduct(product: Product, program?: PromoProgram): Pr
     const p = getPromoForSku(sku);
     if (!p || (program && p.program !== program)) continue;
     if (!best || p.price < best.price) best = p;
+  }
+  if (!best) {
+    const h = getPromoForHandle(product.handle);
+    if (h && (!program || h.program === program)) best = h;
   }
   return best;
 }
@@ -215,4 +250,5 @@ export const PROGRAM_LABELS: Record<PromoProgram, string> = {
   clearance: 'Xả kho',
   'early-bird': 'Early Bird',
   'flash-sale': 'Flash Sale',
+  'special-offer': 'Ưu đãi',
 };
