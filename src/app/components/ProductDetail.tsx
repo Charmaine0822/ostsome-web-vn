@@ -7,7 +7,7 @@ import { useAuth } from './AuthContext';
 import { fetchProductByHandle } from '../data/shopify';
 import type { ShopifyProduct } from '../data/shopify';
 import { getFostPrice } from '../data/pricing';
-import { getPromoForSku, getPromoForProduct, PROGRAM_LABELS } from '../data/promoPrograms';
+import { getPromoForSku, getPromoForProduct, getPromoForHandle, PROGRAM_LABELS } from '../data/promoPrograms';
 import { SOLD_COUNT_BASELINE } from '../data/soldCounts';
 import { useProducts } from '../hooks/useProducts';
 import { ProductCard } from './ProductCard';
@@ -163,7 +163,7 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
   // with nothing chosen yet → the best promo across its variants, so the
   // page matches the card the customer just clicked.
   const promo = selectedVariant
-    ? getPromoForSku(selectedVariant.sku)
+    ? getPromoForSku(selectedVariant.sku) ?? getPromoForHandle(product.handle)
     : variants.length === 0
       ? getPromoForSku(shopifyVariantNodes[0]?.sku) ?? getPromoForProduct(product)
       : getPromoForProduct(product);
