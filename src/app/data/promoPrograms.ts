@@ -7,9 +7,8 @@
 //   rrp   = "RRP Ecom/OSTSOME" column (shown struck out)
 //   price = "Selling price" column (the promo price)
 //
-// Legacy sheet entries below now supply program labels only. Live Shopify prices
-// and automatic discounts supply all displayed amounts.
-// Historical note: Until the same prices were set in Shopify
+// Existing campaign prices are preserved. Lower live Shopify discounts can
+// override them. Campaign prices must also be configured in Shopify
 // (price / compare-at, or a Shopify discount), checkout charges whatever
 // Shopify has. Once Shopify matches, nothing here needs to change.
 //
@@ -199,35 +198,41 @@ export type Promo = PromoEntry & { pct: number };
 
 const withPct = (e: PromoEntry): Promo => ({ ...e, pct: Math.round(((e.rrp - e.price) / e.rrp) * 100) });
 
-/** Promo for one variant SKU, or null if it isn't in any program. */
+// Preserve existing merchandising programs; add live discounts without removing them.
+function mergePromo(legacy: PromoEntry | undefined, live: { price: number; rrp: number } | null): Promo | null {
+  const liveDiscount = live && live.price < live.rrp;
+  if (legacy) {
+    return withPct(liveDiscount && live.price < legacy.price
+      ? { ...live, program: legacy.program }
+      : legacy);
+  }
+  return liveDiscount ? withPct({ ...live, program: 'special-offer' }) : null;
+}
+
 export function getPromoForSku(sku: string | null | undefined): Promo | null {
   if (!sku) return null;
-  const live = livePriceForSku(sku);
-  if (!live || live.price >= live.rrp) return null;
-  const program = PROMO_BY_SKU.get(normalizeSku(sku))?.program ?? 'special-offer';
-  return withPct({ ...live, program });
+  return mergePromo(PROMO_BY_SKU.get(normalizeSku(sku)), livePriceForSku(sku));
 }
 
-/** Product-wide promo by Shopify handle (see PROMO_BY_HANDLE_RAW), or null. */
 export function getPromoForHandle(handle: string | null | undefined): Promo | null {
   if (!handle) return null;
-  const live = livePriceForHandle(handle);
-  if (!live || live.price >= live.rrp) return null;
-  const program = PROMO_BY_HANDLE.get(normalizeHandle(handle))?.program ?? 'special-offer';
-  return withPct({ ...live, program });
+  return mergePromo(PROMO_BY_HANDLE.get(normalizeHandle(handle)), livePriceForHandle(handle));
 }
 
-/**
- * Best (lowest-priced) promo across a product's variants — used for cards,
- * where no variant is chosen yet. Optionally limited to one program.
- */
 export function getPromoForProduct(product: Product, program?: PromoProgram): Promo | null {
-  const live = livePriceForHandle(product.handle);
-  if (!live || live.price >= live.rrp) return null;
-  const classification = (product.skus ?? []).map(sku => PROMO_BY_SKU.get(normalizeSku(sku))?.program).find(Boolean)
-    ?? PROMO_BY_HANDLE.get(normalizeHandle(product.handle))?.program ?? 'special-offer';
-  if (program && classification !== program) return null;
-  return withPct({ ...live, program: classification });
+  let best: Promo | null = null;
+  for (const sku of product.skus ?? []) {
+    const promo = getPromoForSku(sku);
+    if (!promo || (program && promo.program !== program)) continue;
+    if (!best || promo.price < best.price) best = promo;
+  }
+  const handlePromo = getPromoForHandle(product.handle);
+  if (handlePromo && (!program || handlePromo.program === program) && (!best || handlePromo.price < best.price)) {
+    // Keep a SKU's campaign label when a product-wide live discount is better.
+    best = best && handlePromo.program === 'special-offer'
+      ? { ...handlePromo, program: best.program } : handlePromo;
+  }
+  return best;
 }
 
 export type PromoItem = { product: Product; promo: Promo };
