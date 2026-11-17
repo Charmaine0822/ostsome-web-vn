@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, Star } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import type { Product } from '../data/products';
 import { getProgramItems, getMaxDiscountPct } from '../data/promoPrograms';
@@ -127,11 +127,7 @@ export function OneSeasonOffPage({ onBack, onSelectProduct }: Props) {
                   <div className="p-3 md:p-4">
                     <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: '#6F6A63' }}>{product.vendor}</p>
                     <h3 className="text-xs md:text-sm font-bold line-clamp-2 mb-2" style={{ color: '#111111' }}>{product.title}</h3>
-                    <div className="flex items-center gap-0.5 mb-1">
-                      {[1, 2, 3, 4, 5].map(s => (
-                        <Star key={s} size={10} className={s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />
-                      ))}
-                    </div>
+                    
                     {isFostMember ? (
                       <>
                         <span className="text-xs line-through block" style={{ color: '#6F6A63' }}>{rrp.toLocaleString('vi-VN')}₫</span>

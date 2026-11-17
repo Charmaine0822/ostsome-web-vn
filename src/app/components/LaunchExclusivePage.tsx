@@ -1,4 +1,4 @@
-import { ChevronLeft, Star } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import type { Product } from '../data/products';
 import { useAuth } from './AuthContext';
@@ -100,11 +100,7 @@ export function LaunchExclusivePage({ onBack, onSelectProduct, onJoinFost }: Pro
                   <div className="p-3 md:p-4">
                     <p className="text-[9px] font-bold text-[#F16C10] uppercase tracking-widest mb-1">{product.vendor}</p>
                     <h3 className="text-xs md:text-sm font-bold text-black line-clamp-2 mb-2">{product.title}</h3>
-                    <div className="flex items-center gap-0.5 mb-1">
-                      {[1, 2, 3, 4, 5].map(s => (
-                        <Star key={s} size={10} className={s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />
-                      ))}
-                    </div>
+                    
                     {isFostMember ? (
                       <>
                         <span className="text-xs text-neutral-400 line-through block">{rrp.toLocaleString('vi-VN')}₫</span>

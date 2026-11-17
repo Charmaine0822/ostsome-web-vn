@@ -1,4 +1,4 @@
-import { ChevronLeft, Star } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
@@ -66,11 +66,7 @@ export function CategoryProductsPage({ category, onBack, onSelectProduct }: Cate
               </div>
               <p className="text-xs font-semibold text-[#F16C10] uppercase tracking-wider mb-0.5">{product.vendor}</p>
               <p className="text-sm font-medium text-black truncate mb-1">{product.title}</p>
-              <div className="flex items-center gap-0.5 mb-1">
-                {[1, 2, 3, 4, 5].map(s => (
-                  <Star key={s} size={10} className={s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />
-                ))}
-              </div>
+              
               {Boolean(user) ? (
                 <div className="flex flex-col">
                   <span className="text-xs text-neutral-400 line-through">{originalPrice.toLocaleString('vi-VN')}₫</span>

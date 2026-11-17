@@ -2,7 +2,6 @@ import { useProducts } from '../hooks/useProducts';
 import type { Product } from '../data/products';
 import { useAuth } from './AuthContext';
 import { getFostPrice } from '../data/pricing';
-import { Star } from 'lucide-react';
 import { getProgramItems, getMaxDiscountPct } from '../data/promoPrograms';
 
 type Props = {
@@ -93,11 +92,7 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
                       <div className="flex flex-col justify-center p-3 flex-1 min-w-0">
                         <p className="font-bold uppercase tracking-widest mb-1 truncate" style={{ fontSize: '0.58rem', color: '#6F6A63' }}>{product.vendor}</p>
                         <h3 className="font-bold line-clamp-2 mb-2 leading-snug" style={{ fontSize: '0.78rem', color: '#111111' }}>{product.title}</h3>
-                        <div className="flex items-center gap-0.5 mb-1">
-                          {[1, 2, 3, 4, 5].map(s => (
-                            <Star key={s} size={9} className={s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />
-                          ))}
-                        </div>
+                        
                         {isFostMember ? (
                           <>
                             <span className="line-through block" style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>
@@ -169,11 +164,7 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
                   <div className="p-2.5">
                     <p className="font-bold uppercase truncate mb-0.5" style={{ fontSize: '0.55rem', color: '#6F6A63' }}>{product.vendor}</p>
                     <h3 className="font-bold line-clamp-2 leading-snug mb-1.5" style={{ fontSize: '0.72rem', color: '#111111' }}>{product.title}</h3>
-                    <div className="flex items-center gap-0.5 mb-1">
-                      {[1, 2, 3, 4, 5].map(s => (
-                        <Star key={s} size={9} className={s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />
-                      ))}
-                    </div>
+                    
                     {isFostMember ? (
                       <>
                         <span className="line-through block" style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>

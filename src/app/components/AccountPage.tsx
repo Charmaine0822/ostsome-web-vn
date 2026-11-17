@@ -4,7 +4,7 @@ import { getCustomer, updateCustomerProfile, saveCustomerAddress } from '../data
 import {
   ChevronLeft, Package, User, Heart, Crown, Tag, Zap, Users, Gift,
   CalendarHeart, ChevronRight, Edit2, Save, X, MapPin, Phone, Mail,
-  Lock, Check, Truck, RotateCcw, Star, ShoppingBag
+  Lock, Check, Truck, RotateCcw, ShoppingBag
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import type { Product } from '../data/products';
@@ -227,9 +227,7 @@ function MyOrders() {
                       <RotateCcw size={12} /> Đặt Lại
                     </button>
                   )}
-                  <button className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600 border border-neutral-200 px-3 py-2 rounded-lg hover:bg-white transition">
-                    <Star size={12} /> Đánh Giá
-                  </button>
+                  
                   {order.status === 'Shipped' && (
                     <button className="flex items-center gap-1.5 text-xs font-semibold text-[#F16C10] border border-[#F16C10]/30 px-3 py-2 rounded-lg hover:bg-[#F16C10]/5 transition">
                       <Truck size={12} /> Theo Dõi Đơn Hàng

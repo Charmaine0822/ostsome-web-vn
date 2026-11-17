@@ -1,13 +1,14 @@
 import { trackViewItem } from '../data/tracking';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, ShoppingCart, Star, Shield, Truck, RefreshCw, Check, X, ZoomIn } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingCart, Shield, Truck, RefreshCw, Check, X, ZoomIn } from 'lucide-react';
 import type { Product } from '../data/products';
 import { useCart } from './CartContext';
 import { useAuth } from './AuthContext';
 import { fetchProductByHandle } from '../data/shopify';
 import type { ShopifyProduct } from '../data/shopify';
 import { getFostPrice } from '../data/pricing';
-import { getPromoForSku, getPromoForProduct, getPromoForHandle, PROGRAM_LABELS } from '../data/promoPrograms';
+import { livePriceForVariant } from '../data/catalogDiscounts';
+import { getPromoForSku, getPromoForProduct, PROGRAM_LABELS } from '../data/promoPrograms';
 import { SOLD_COUNT_BASELINE } from '../data/soldCounts';
 import { useProducts } from '../hooks/useProducts';
 import { ProductCard } from './ProductCard';
@@ -119,6 +120,7 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
         );
         if (opts.length === 0) return null;
         return {
+          variantId: node.id,
           option1Name: opts[0]?.name ?? null,
           option1Value: opts[0]?.value ?? '',
           option2Name: opts[1]?.name,
@@ -162,14 +164,15 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
   // program). Single-variant product → its only SKU. Multi-variant product
   // with nothing chosen yet → the best promo across its variants, so the
   // page matches the card the customer just clicked.
+  const selectedLive = selectedVariant ? livePriceForVariant(selectedVariant.variantId) : null;
+  const productPromo = getPromoForProduct(product);
   const promo = selectedVariant
-    ? getPromoForSku(selectedVariant.sku) ?? getPromoForHandle(product.handle)
-    : variants.length === 0
-      ? getPromoForSku(shopifyVariantNodes[0]?.sku) ?? getPromoForProduct(product)
-      : getPromoForProduct(product);
-
-  const activePrice = promo ? promo.price : selectedVariant ? selectedVariant.price : product.price;
-  const comparePrice = promo ? promo.rrp : product.comparePrice;
+    ? selectedLive && selectedLive.price < selectedLive.rrp
+      ? { ...selectedLive, program: getPromoForSku(selectedVariant.sku)?.program ?? 'special-offer' as const }
+      : null
+    : productPromo;
+  const activePrice = selectedLive?.price ?? (promo ? promo.price : selectedVariant ? selectedVariant.price : product.price);
+  const comparePrice = selectedLive?.rrp ?? (promo ? promo.rrp : product.comparePrice);
   const hasDiscount = Boolean(comparePrice && comparePrice > activePrice);
   const discountPct = hasDiscount
     ? Math.round(((comparePrice! - activePrice) / comparePrice!) * 100)
@@ -1021,12 +1024,8 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
             <h1 className="text-2xl md:text-3xl font-bold text-black leading-tight mb-4">{product.title}</h1>
 
             <div className="flex items-center gap-2 mb-5">
-              <div className="flex items-center gap-0.5">
-                {[1,2,3,4,5].map((s) => (
-                  <Star key={s} size={14} className={s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />
-                ))}
-              </div>
-              <span className="text-xs text-neutral-400">(24 đánh giá)</span>
+              
+              
               {soldCount !== null && soldCount > 0 && (
                 <span className="text-xs font-bold text-[#F16C10]">· Đã bán {soldCount.toLocaleString('vi-VN')}</span>
               )}
