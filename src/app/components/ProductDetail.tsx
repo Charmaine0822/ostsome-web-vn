@@ -165,14 +165,13 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
   // with nothing chosen yet → the best promo across its variants, so the
   // page matches the card the customer just clicked.
   const selectedLive = selectedVariant ? livePriceForVariant(selectedVariant.variantId) : null;
-  const productPromo = getPromoForProduct(product);
+  const legacyVariantPromo = selectedVariant ? getPromoForSku(selectedVariant.sku) : null;
   const promo = selectedVariant
-    ? selectedLive && selectedLive.price < selectedLive.rrp
-      ? { ...selectedLive, program: getPromoForSku(selectedVariant.sku)?.program ?? 'special-offer' as const }
-      : null
-    : productPromo;
-  const activePrice = selectedLive?.price ?? (promo ? promo.price : selectedVariant ? selectedVariant.price : product.price);
-  const comparePrice = selectedLive?.rrp ?? (promo ? promo.rrp : product.comparePrice);
+    ? legacyVariantPromo ?? (selectedLive && selectedLive.price < selectedLive.rrp
+      ? { ...selectedLive, program: 'special-offer' as const } : null)
+    : getPromoForProduct(product);
+  const activePrice = promo?.price ?? selectedLive?.price ?? selectedVariant?.price ?? product.price;
+  const comparePrice = promo?.rrp ?? selectedLive?.rrp ?? product.comparePrice;
   const hasDiscount = Boolean(comparePrice && comparePrice > activePrice);
   const discountPct = hasDiscount
     ? Math.round(((comparePrice! - activePrice) / comparePrice!) * 100)
