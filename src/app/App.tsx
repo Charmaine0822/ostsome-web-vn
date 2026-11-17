@@ -105,7 +105,11 @@ function AppInner() {
   const { user } = useAuth();
   const { openCart } = useCart();
   const [page, setPage] = useState<Page>('home');
-  const [authModal, setAuthModal] = useState<{ open: boolean; view: 'login' | 'signup' }>({ open: false, view: 'login' });
+  // Allow Facebook posts and other shared links to open FOST registration directly.
+  const [authModal, setAuthModal] = useState<{ open: boolean; view: 'login' | 'signup' }>(() => {
+    const openSignup = new URLSearchParams(window.location.search).get('register') === 'fost';
+    return { open: openSignup, view: openSignup ? 'signup' : 'login' };
+  });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [selectedNavCategory, setSelectedNavCategory] = useState<string | null>(null);
