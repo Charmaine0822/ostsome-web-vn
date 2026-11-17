@@ -113,7 +113,7 @@ export type ShopifyProduct = {
   // them (generally collection creation order, not display priority) — the
   // caller decides which one to surface, e.g. picking the first collection
   // that isn't just a same-name-as-vendor "brand page" collection.
-  collections: { edges: { node: { title: string; handle: string } }[] };
+  collections: { edges: { node: { id: string; title: string; handle: string } }[] };
   variants: {
     edges: {
       node: {
@@ -172,7 +172,7 @@ export async function fetchAllProducts(): Promise<ShopifyProduct[]> {
             node {
               id handle title vendor productType descriptionHtml
               images(first: 10) { edges { node { url altText } } }
-              collections(first: 10) { edges { node { title handle } } }
+              collections(first: 250) { edges { node { id title handle } } }
               ${PRODUCT_METAFIELDS_QUERY}
               variants(first: 20) {
                 edges {
@@ -213,7 +213,7 @@ export async function fetchProductByHandle(handle: string): Promise<ShopifyProdu
       product(handle: $handle) {
         id handle title vendor productType descriptionHtml
         images(first: 10) { edges { node { url altText } } }
-        collections(first: 10) { edges { node { title handle } } }
+        collections(first: 250) { edges { node { id title handle } } }
         ${PRODUCT_METAFIELDS_QUERY}
         variants(first: 20) {
           edges {

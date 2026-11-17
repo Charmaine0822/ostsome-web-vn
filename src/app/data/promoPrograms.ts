@@ -7,7 +7,9 @@
 //   rrp   = "RRP Ecom/OSTSOME" column (shown struck out)
 //   price = "Selling price" column (the promo price)
 //
-// ⚠️ These are DISPLAY prices. Until the same prices are set in Shopify
+// Legacy sheet entries below now supply program labels only. Live Shopify prices
+// and automatic discounts supply all displayed amounts.
+// Historical note: Until the same prices were set in Shopify
 // (price / compare-at, or a Shopify discount), checkout charges whatever
 // Shopify has. Once Shopify matches, nothing here needs to change.
 //
@@ -15,6 +17,7 @@
 // delete its block.
 
 import type { Product } from './products';
+import { livePriceForSku, livePriceForHandle } from './catalogDiscounts';
 
 export type PromoProgram = 'clearance' | 'early-bird' | 'flash-sale' | 'special-offer';
 
@@ -199,15 +202,19 @@ const withPct = (e: PromoEntry): Promo => ({ ...e, pct: Math.round(((e.rrp - e.p
 /** Promo for one variant SKU, or null if it isn't in any program. */
 export function getPromoForSku(sku: string | null | undefined): Promo | null {
   if (!sku) return null;
-  const e = PROMO_BY_SKU.get(normalizeSku(sku));
-  return e ? withPct(e) : null;
+  const live = livePriceForSku(sku);
+  if (!live || live.price >= live.rrp) return null;
+  const program = PROMO_BY_SKU.get(normalizeSku(sku))?.program ?? 'special-offer';
+  return withPct({ ...live, program });
 }
 
 /** Product-wide promo by Shopify handle (see PROMO_BY_HANDLE_RAW), or null. */
 export function getPromoForHandle(handle: string | null | undefined): Promo | null {
   if (!handle) return null;
-  const e = PROMO_BY_HANDLE.get(normalizeHandle(handle));
-  return e ? withPct(e) : null;
+  const live = livePriceForHandle(handle);
+  if (!live || live.price >= live.rrp) return null;
+  const program = PROMO_BY_HANDLE.get(normalizeHandle(handle))?.program ?? 'special-offer';
+  return withPct({ ...live, program });
 }
 
 /**
@@ -215,17 +222,12 @@ export function getPromoForHandle(handle: string | null | undefined): Promo | nu
  * where no variant is chosen yet. Optionally limited to one program.
  */
 export function getPromoForProduct(product: Product, program?: PromoProgram): Promo | null {
-  let best: Promo | null = null;
-  for (const sku of product.skus ?? []) {
-    const p = getPromoForSku(sku);
-    if (!p || (program && p.program !== program)) continue;
-    if (!best || p.price < best.price) best = p;
-  }
-  if (!best) {
-    const h = getPromoForHandle(product.handle);
-    if (h && (!program || h.program === program)) best = h;
-  }
-  return best;
+  const live = livePriceForHandle(product.handle);
+  if (!live || live.price >= live.rrp) return null;
+  const classification = (product.skus ?? []).map(sku => PROMO_BY_SKU.get(normalizeSku(sku))?.program).find(Boolean)
+    ?? PROMO_BY_HANDLE.get(normalizeHandle(product.handle))?.program ?? 'special-offer';
+  if (program && classification !== program) return null;
+  return withPct({ ...live, program: classification });
 }
 
 export type PromoItem = { product: Product; promo: Promo };
