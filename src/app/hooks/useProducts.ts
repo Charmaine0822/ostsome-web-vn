@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { loadCatalogPrices, livePriceForHandle } from '../data/catalogDiscounts';
 import { fetchAllProducts } from '../data/shopify';
 import type { ShopifyProduct } from '../data/shopify';
 import type { Product, ProductMetafields } from '../data/products';
@@ -7,6 +8,20 @@ import type { Product, ProductMetafields } from '../data/products';
 // Products are fetched once and cached for the lifetime of the app session
 let cachedProducts: Product[] | null = null;
 let fetchPromise: Promise<Product[]> | null = null;
+let refreshPromise: Promise<Product[]> | null = null;
+let lastRefresh = 0;
+async function refreshCatalog() {
+  if (!refreshPromise && Date.now() - lastRefresh >= 30000) {
+    refreshPromise = (async () => {
+      const fresh = await fetchAllProducts();
+      await loadCatalogPrices(fresh);
+      cachedProducts = fresh.filter(p => Number(p.variants.edges[0]?.node.price.amount) > 0).map(mapShopifyProduct);
+      lastRefresh = Date.now();
+      return cachedProducts;
+    })().finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise ?? cachedProducts;
+}
 
 // ─── CATEGORY MAPPING ─────────────────────────────────────────────────────────
 
@@ -226,7 +241,7 @@ export function mapShopifyProduct(p: ShopifyProduct): Product {
     type: p.productType,
     category: pickCategory(p),
     navCategory: mapNavCategory(p.vendor, p.productType, p.collections.edges.map(e => e.node.title)),
-    price: parseFloat(firstVariant?.price.amount ?? '0'),
+    price: livePriceForHandle(p.handle)?.price ?? parseFloat(firstVariant?.price.amount ?? '0'),
     comparePrice,
     images: p.images.edges.map(e => e.node.url),
     collections: p.collections.edges.map(e => e.node.title),
@@ -248,17 +263,18 @@ export function useProducts() {
     if (cachedProducts !== null) {
       setProducts(cachedProducts);
       setLoading(false);
-      return;
     }
 
     if (!fetchPromise) {
-      fetchPromise = fetchAllProducts().then(shopifyProducts =>
-        shopifyProducts
+      fetchPromise = fetchAllProducts().then(async shopifyProducts => {
+        await loadCatalogPrices(shopifyProducts);
+        return shopifyProducts
+          .filter(p => Number(p.variants.edges[0]?.node.price.amount) > 0)
           .map(mapShopifyProduct)
           // Exclude products with no real price set in Shopify (shows as
           // SGD 0.00) — these are incomplete listings, not actual deals.
-          .filter(p => p.price > 0)
-      );
+          .filter(p => p.price >= 0)
+      });
     }
 
     fetchPromise
@@ -273,6 +289,20 @@ export function useProducts() {
         setLoading(false);
         fetchPromise = null; // allow retry
       });
+    let active = true;
+    let refreshing = false;
+    const refresh = async () => {
+      if (refreshing || document.visibilityState === 'hidden') return;
+      refreshing = true;
+      try {
+        const fresh = await refreshCatalog();
+        if (active && fresh) setProducts(fresh);
+      } catch (error) { console.error('Catalog refresh failed', error); }
+      finally { refreshing = false; }
+    };
+    const timer = window.setInterval(refresh, 60000);
+    window.addEventListener('focus', refresh);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
   }, []);
 
   return { products, loading, error };
