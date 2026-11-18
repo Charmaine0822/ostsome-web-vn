@@ -35,7 +35,7 @@ exports.handler = async event => {
         discountAutomaticNodes(first: 10, after: $cursor) {
           pageInfo { hasNextPage endCursor }
           nodes { id automaticDiscount { ... on DiscountAutomaticBasic {
-            status startsAt endsAt discountClass context { __typename }
+            status startsAt endsAt discountClasses context { __typename }
             minimumRequirement { __typename }
             customerGets {
               appliesOnOneTimePurchase
@@ -53,7 +53,7 @@ exports.handler = async event => {
       for (const node of data.discountAutomaticNodes.nodes) {
         const d = node.automaticDiscount;
         // Conditional, customer-specific, order, BXGY and app discounts belong in the cart.
-        if (d.status !== 'ACTIVE' || d.discountClass !== 'PRODUCT' ||
+        if (d.status !== 'ACTIVE' || !(d.discountClasses?.length === 1 && d.discountClasses[0] === 'PRODUCT') ||
             d.context?.__typename !== 'DiscountBuyerSelectionAll' || d.minimumRequirement ||
             !d.customerGets?.appliesOnOneTimePurchase) continue;
         const v = d.customerGets.value;
