@@ -4,6 +4,7 @@ export type CatalogRule = {
   all: boolean; products: string[]; variants: string[]; collections: string[];
 };
 export type LivePrice = { price: number; rrp: number };
+let lastRules: CatalogRule[] | null = null;
 const byVariant = new Map<string, LivePrice>();
 export const livePriceForVariant = (id: string) => byVariant.get(id) ?? null;
 const bySku = new Map<string, LivePrice>();
@@ -33,8 +34,10 @@ export async function loadCatalogPrices(products: ShopifyProduct[]) {
     const result = await response.json();
     if (!Array.isArray(result.rules)) throw new Error('Invalid catalog discounts');
     rules = result.rules;
+    lastRules = rules;
   } catch (error) {
-    // Show actual Shopify product prices on failure, never stale hand-entered discounts.
+    // On a temporary failure keep the last good discounts so prices don't flip back; first-load failure falls back to Shopify/table prices.
+    rules = lastRules ?? [];
     console.error('Automatic discount display unavailable. Check SHOPIFY_ADMIN_TOKEN and read_discounts.', error);
   }
   bySku.clear(); byHandle.clear(); byVariant.clear();

@@ -200,13 +200,12 @@ const withPct = (e: PromoEntry): Promo => ({ ...e, pct: Math.round(((e.rrp - e.p
 
 // Preserve existing merchandising programs; add live discounts without removing them.
 function mergePromo(legacy: PromoEntry | undefined, live: { price: number; rrp: number } | null): Promo | null {
-  const liveDiscount = live && live.price < live.rrp;
-  if (legacy) {
-    return withPct(liveDiscount && live.price < legacy.price
-      ? { ...live, program: legacy.program }
-      : legacy);
+  // Shopify's live price is what checkout charges, so it always wins when there is a discount.
+  // The hand-entered table only fills in when Shopify has no discount (or the service is down).
+  if (live && live.price < live.rrp) {
+    return withPct({ ...live, program: legacy?.program ?? 'special-offer' });
   }
-  return liveDiscount ? withPct({ ...live, program: 'special-offer' }) : null;
+  return legacy ? withPct(legacy) : null;
 }
 
 export function getPromoForSku(sku: string | null | undefined): Promo | null {
