@@ -2,7 +2,7 @@ import { X, ShoppingBag, Minus, Plus, Trash2, ArrowRight, Loader2 } from 'lucide
 import { useCart } from './CartContext';
 import { getFostPrice } from '../data/pricing';
 
-export function CartDrawer() {
+export function CartDrawer({ onJoinFost }: { onJoinFost?: () => void }) {
   const {
     items, removeItem, updateQty, subtotal, totalItems, isOpen, closeCart,
     goToShopifyCheckout, checkoutLoading, isFostMember, fostSubtotal, fostSavings,
@@ -140,9 +140,12 @@ export function CartDrawer() {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-sm font-bold text-black">
-                            {(item.variantPrice * item.qty).toLocaleString('vi-VN')}₫
-                          </span>
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm font-bold text-[#F16C10]">{(item.variantPrice * item.qty).toLocaleString('vi-VN')}₫</span>
+                            {(item.variantOriginalPrice ?? 0) > item.variantPrice && (
+                              <span className="text-[10px] text-neutral-400 line-through">{(item.variantOriginalPrice! * item.qty).toLocaleString('vi-VN')}₫</span>
+                            )}
+                          </div>
                         )}
                         <button onClick={() => removeItem(idx)} className="text-neutral-300 hover:text-red-400 transition">
                           <Trash2 size={14} />
@@ -159,6 +162,11 @@ export function CartDrawer() {
         {/* Footer */}
         {items.length > 0 && (
           <div className="px-6 py-5 border-t border-neutral-100 bg-white">
+            {!isFostMember && (
+              <button onClick={() => { closeCart(); onJoinFost?.(); }} className="w-full mb-4 p-3 rounded-lg bg-orange-50 text-[#F16C10] text-sm font-semibold underline">
+                Đăng ký FOST miễn phí — nhận thêm ưu đãi 5%
+              </button>
+            )}
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm text-neutral-500">Tạm tính</span>
               <span className={`text-base font-bold ${isFostMember ? 'text-neutral-400 line-through' : 'text-black'}`}>

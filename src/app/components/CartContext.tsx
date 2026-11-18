@@ -3,6 +3,8 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import type { Product } from '../data/products';
 import { createCart, addToCart, removeFromCart, updateCartLine, getCart } from '../data/shopify';
 import { useAuth } from './AuthContext';
+import { useProducts } from '../hooks/useProducts';
+import { repriceCart } from '../data/cartPricing';
 import { FOST_DISCOUNT_CODE, getFostPrice } from '../data/pricing';
 
 export type CartItem = {
@@ -11,6 +13,7 @@ export type CartItem = {
   selectedOption1?: string | null;
   selectedOption2?: string | null;
   variantPrice: number;
+  variantOriginalPrice?: number;
   variantImage?: string | null;
   shopifyVariantId?: string | null; // Shopify GID for checkout
 };
@@ -50,10 +53,15 @@ function loadPersistedCart(): CartItem[] {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user, shopifyToken } = useAuth();
   const isFostMember = Boolean(user);
+  const { products } = useProducts();
 
   const [items, setItems] = useState<CartItem[]>(() => loadPersistedCart());
   const [isOpen, setIsOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  useEffect(() => {
+    if (products.length) setItems(previous => repriceCart(previous));
+  }, [products]);
 
   // Persist the cart to localStorage on every change, so refreshing the
   // page or navigating back from checkout (via the logo, or the browser's
@@ -100,6 +108,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback((incoming: Omit<CartItem, 'qty'> & { qty?: number }) => {
     const qty = incoming.qty ?? 1;
+    incoming = repriceCart([{ ...incoming, qty }])[0];
     setItems(prev => {
       const existingIdx = prev.findIndex(
         i =>
@@ -109,7 +118,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       );
       if (existingIdx !== -1) {
         const updated = [...prev];
-        updated[existingIdx] = { ...updated[existingIdx], qty: updated[existingIdx].qty + qty };
+        updated[existingIdx] = { ...updated[existingIdx], ...incoming, qty: updated[existingIdx].qty + qty };
         return updated;
       }
       return [...prev, { ...incoming, qty }];

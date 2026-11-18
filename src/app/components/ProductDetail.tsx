@@ -20,6 +20,7 @@ type ProductDetailProps = {
   product: Product;
   onBack: () => void;
   onCheckout?: () => void;
+  onJoinFost?: () => void;
   // Lets the related-products row navigate to another product's detail
   // page. Optional so this component doesn't break if a parent hasn't
   // wired it up yet — in that case related product cards just won't
@@ -29,7 +30,7 @@ type ProductDetailProps = {
 
 const RUBYOUNG_SPIN_HANDLES = ['rubyoung-spin'];
 
-export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: ProductDetailProps) {
+export function ProductDetail({ product, onBack, onCheckout, onSelectProduct, onJoinFost }: ProductDetailProps) {
   const { user } = useAuth();
   const isFostMember = Boolean(user);
   const [activeImg, setActiveImg] = useState(0);
@@ -1030,38 +1031,19 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
               )}
             </div>
 
-            {isFostMember ? (
-              <div className="mb-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-neutral-400 line-through">
-                    {(hasDiscount ? comparePrice! : activePrice).toLocaleString('vi-VN')}₫
-                  </span>
-                  {hasDiscount && (
-                    <span className="text-xs font-bold text-[#F16C10]">-{discountPct}%</span>
-                  )}
-                </div>
-                <div className="flex items-baseline gap-3 mt-0.5">
-                  <span className="text-3xl font-bold text-[#F16C10]">{getFostPrice(activePrice).toLocaleString('vi-VN')}₫</span>
-                  <span className="text-[10px] font-bold text-white bg-[#F16C10] px-2 py-0.5 rounded-full uppercase tracking-wide">Giá FOST</span>
-                </div>
-                {hasDiscount && (
-                  <p className="text-xs text-neutral-400 mt-1">Giá gốc {comparePrice!.toLocaleString('vi-VN')}₫ — đã áp dụng thêm ưu đãi 5% dành cho thành viên FOST</p>
+            <div className="mb-1">
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="text-3xl font-bold text-[#F16C10]">{(isFostMember ? getFostPrice(activePrice) : activePrice).toLocaleString('vi-VN')}₫</span>
+                {(hasDiscount || isFostMember) && (
+                  <span className="text-sm text-neutral-400 line-through">{(isFostMember ? activePrice : comparePrice!).toLocaleString('vi-VN')}₫</span>
                 )}
+                {isFostMember && <span className="text-[10px] font-bold text-white bg-[#F16C10] px-2 py-0.5 rounded uppercase">Giá FOST</span>}
               </div>
-            ) : (
-              <div className="mb-1">
-                {hasDiscount && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-neutral-400 line-through">{comparePrice!.toLocaleString('vi-VN')}₫</span>
-                    <span className="text-xs font-bold text-[#F16C10]">-{discountPct}%</span>
-                  </div>
-                )}
-                <span className="text-3xl font-bold block mt-0.5 text-[#F16C10]">{activePrice.toLocaleString('vi-VN')}₫</span>
-              </div>
-            )}
+              {hasDiscount && <p className="text-xs text-neutral-400 mt-1">Giá gốc {comparePrice!.toLocaleString('vi-VN')}₫{isFostMember ? ' — đã áp dụng thêm ưu đãi 5% dành cho thành viên FOST' : ` — giảm ${discountPct}%`}</p>}
+            </div>
             {!isFostMember && (
               <p className="text-xs text-[#F16C10] font-semibold mb-5">
-                FOST Member giảm thêm 5% — Tham gia miễn phí để nhận giá này.
+                FOST Member giảm thêm 5% — <button onClick={onJoinFost} className="underline font-bold">Đăng ký FOST miễn phí</button> để nhận giá này.
               </p>
             )}
             {isFostMember && (

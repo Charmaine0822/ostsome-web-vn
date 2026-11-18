@@ -18,6 +18,7 @@ type HeaderProps = {
   onSelectProduct?: (product: Product) => void;
   onSearchNavigate?: (query: string) => void;
   onNavToLogin?: () => void;
+  onNavToSignup?: () => void;
   onNavToAccount?: (tab?: string) => void;
   onLogout?: () => void;
   currentPage?: string;
@@ -31,7 +32,7 @@ const announcementMessages = [
   "🔥 Latest of the Latest",
 ];
 
-export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCategory, onNavToGenericCategory, onSelectProduct, onSearchNavigate, onNavToLogin, onNavToAccount, onLogout, currentPage, currentNavCategory, currentGenericCategory }: HeaderProps) {
+export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCategory, onNavToGenericCategory, onSelectProduct, onSearchNavigate, onNavToLogin, onNavToSignup, onNavToAccount, onLogout, currentPage, currentNavCategory, currentGenericCategory }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -257,6 +258,7 @@ export function Header({ onNavToProducts, onNavToHome, onNavToBrands, onNavToCat
                 )}
               </button>
 
+              {!user && <button onClick={onNavToSignup} className="text-xs font-bold text-[#F16C10] underline" aria-label="Đăng ký FOST miễn phí">Đăng ký FOST</button>}
               {/* User / Profile */}
               <div className="relative">
                 {user ? (
