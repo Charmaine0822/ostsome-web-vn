@@ -27,11 +27,11 @@ async function allIds(id, type, field, connection) {
   const ids = connection.nodes.map(n => n.id);
   while (connection.pageInfo.hasNextPage) {
     const data = await queryShopify(`query($id: ID!, $cursor: String) {
-      discountAutomaticNode(id: $id) { automaticDiscount { ... on DiscountAutomaticBasic {
+      automaticDiscountNode(id: $id) { automaticDiscount { ... on DiscountAutomaticBasic {
         customerGets { items { ... on ${type} { ${field}(first: 250, after: $cursor) { ${PAGE} } } } }
       } } }
     }`, { id, cursor: connection.pageInfo.endCursor });
-    connection = data.discountAutomaticNode.automaticDiscount.customerGets.items[field];
+    connection = data.automaticDiscountNode.automaticDiscount.customerGets.items[field];
     ids.push(...connection.nodes.map(n => n.id));
   }
   return ids;
@@ -44,7 +44,7 @@ exports.handler = async event => {
     let cursor = null;
     do {
       const data = await queryShopify(`query($cursor: String) {
-        discountAutomaticNodes(first: 10, after: $cursor) {
+        automaticDiscountNodes(first: 10, after: $cursor) {
           pageInfo { hasNextPage endCursor }
           nodes { id automaticDiscount { ... on DiscountAutomaticBasic {
             status startsAt endsAt discountClasses context { __typename }
@@ -62,7 +62,7 @@ exports.handler = async event => {
           } } }
         }
       }`, { cursor });
-      for (const node of data.discountAutomaticNodes.nodes) {
+      for (const node of data.automaticDiscountNodes.nodes) {
         const d = node.automaticDiscount;
         // Conditional, customer-specific, order, BXGY and app discounts belong in the cart.
         if (d.status !== 'ACTIVE' || !(d.discountClasses?.length === 1 && d.discountClasses[0] === 'PRODUCT') ||
@@ -83,7 +83,7 @@ exports.handler = async event => {
         }
         rules.push(rule);
       }
-      cursor = data.discountAutomaticNodes.pageInfo.hasNextPage ? data.discountAutomaticNodes.pageInfo.endCursor : null;
+      cursor = data.automaticDiscountNodes.pageInfo.hasNextPage ? data.automaticDiscountNodes.pageInfo.endCursor : null;
     } while (cursor);
     return { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }, body: JSON.stringify({ rules }) };
   } catch (error) {
