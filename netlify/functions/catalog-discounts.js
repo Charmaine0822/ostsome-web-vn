@@ -9,7 +9,18 @@ async function queryShopify(query, variables) {
     body: JSON.stringify({ query, variables }), signal: AbortSignal.timeout(8000),
   });
   const result = await response.json();
-  if (!response.ok || result.errors) throw new Error('Discount API unavailable; check read_discounts scope');
+  if (!response.ok || result.errors?.length) {
+    const messages = (result.errors ?? []).map(e => ({ message: String(e.message).slice(0, 600), code: e.extensions?.code }));
+    const codes = messages.map(e => e.code);
+    let reason = codes.includes('ACCESS_DENIED') || response.status === 403 ? 'SHOPIFY_PERMISSION_DENIED'
+      : codes.includes('THROTTLED') || response.status === 429 ? 'SHOPIFY_RATE_LIMITED'
+      : result.errors?.length ? 'SHOPIFY_QUERY_ERROR' : 'SHOPIFY_HTTP_ERROR';
+    console.error('Catalog discount request failed', JSON.stringify({ status: response.status, errors: messages,
+      requestId: response.headers?.get?.('x-request-id') ?? null }));
+    const error = new Error(reason);
+    error.reason = reason;
+    throw error;
+  }
   return result.data;
 }
 async function allIds(id, type, field, connection) {
@@ -77,6 +88,6 @@ exports.handler = async event => {
     return { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }, body: JSON.stringify({ rules }) };
   } catch (error) {
     console.error(error.message);
-    return { statusCode: 503, headers: { 'Cache-Control': 'no-store' }, body: JSON.stringify({ error: 'Catalog discounts unavailable' }) };
+    return { statusCode: 503, headers: { 'Cache-Control': 'no-store' }, body: JSON.stringify({ error: 'Catalog discounts unavailable', code: error.reason ?? (String(error.message).includes('authentication') ? 'SHOPIFY_AUTHENTICATION_FAILED' : error.name === 'TimeoutError' ? 'SHOPIFY_TIMEOUT' : 'SHOPIFY_REQUEST_FAILED') }) };
   }
 };
