@@ -95,12 +95,12 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
                         
                         {isFostMember ? (
                           <>
-                            <span className="line-through block" style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>
+                            {(promo.rrp > promo.price || isFostMember) && (<span className="line-through block" style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>)}
                             <span className="font-black block" style={{ fontSize: '1rem', color: '#F16C10' }}>{getFostPrice(promo.price).toLocaleString('vi-VN')}₫</span>
                           </>
                         ) : (
                           <>
-                            <span className="line-through block" style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>
+                            {(promo.rrp > promo.price || isFostMember) && (<span className="line-through block" style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>)}
                             <span className="font-black block" style={{ fontSize: '1rem', color: '#F16C10' }}>{promo.price.toLocaleString('vi-VN')}₫</span>
                           </>
                         )}
@@ -167,12 +167,12 @@ export function OneSeasonOff({ onSelectProduct, onViewAll }: Props) {
                     
                     {isFostMember ? (
                       <>
-                        <span className="line-through block" style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>
+                        {(promo.rrp > promo.price || isFostMember) && (<span className="line-through block" style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>)}
                         <span className="font-black block" style={{ fontSize: '0.9rem', color: '#F16C10' }}>{getFostPrice(promo.price).toLocaleString('vi-VN')}₫</span>
                       </>
                     ) : (
                       <>
-                        <span className="line-through block" style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>
+                        {(promo.rrp > promo.price || isFostMember) && (<span className="line-through block" style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{promo.rrp.toLocaleString('vi-VN')}₫</span>)}
                         <span className="font-black block" style={{ fontSize: '0.9rem', color: '#F16C10' }}>{promo.price.toLocaleString('vi-VN')}₫</span>
                       </>
                     )}

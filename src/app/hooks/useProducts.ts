@@ -272,7 +272,7 @@ export function mapShopifyProduct(p: ShopifyProduct): Product {
     category: pickCategory(p),
     navCategory: mapNavCategory(p.vendor, p.productType, p.collections.edges.map(e => e.node.title)),
     price: livePriceForHandle(p.handle)?.price ?? parseFloat(firstVariant?.price.amount ?? '0'),
-    comparePrice,
+    comparePrice: livePriceForHandle(p.handle)?.rrp ?? comparePrice,
     images: p.images.edges.map(e => e.node.url),
     collections: p.collections.edges.map(e => e.node.title),
     skus: p.variants.edges.map(e => e.node.sku).filter((s): s is string => Boolean(s)),

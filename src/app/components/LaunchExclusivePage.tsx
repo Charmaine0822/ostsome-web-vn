@@ -94,7 +94,7 @@ export function LaunchExclusivePage({ onBack, onSelectProduct, onJoinFost }: Pro
                       onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'; }}
                     />
                     <div className="absolute top-2 right-2 bg-[#F16C10] text-white text-[10px] font-black rounded-full w-9 h-9 flex items-center justify-center leading-none">
-                      -{pct}%
+                      {pct > 0 ? `-${pct}%` : 'Early Bird'}
                     </div>
                   </div>
                   <div className="p-3 md:p-4">
@@ -103,7 +103,7 @@ export function LaunchExclusivePage({ onBack, onSelectProduct, onJoinFost }: Pro
                     
                     {isFostMember ? (
                       <>
-                        <span className="text-xs text-neutral-400 line-through block">{rrp.toLocaleString('vi-VN')}₫</span>
+                        {(promo.rrp > promo.price || isFostMember) && (<span className="text-xs text-neutral-400 line-through block">{rrp.toLocaleString('vi-VN')}₫</span>)}
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-base font-black text-[#F16C10]">{getFostPrice(promo.price).toLocaleString('vi-VN')}₫</span>
                         </div>
@@ -111,11 +111,11 @@ export function LaunchExclusivePage({ onBack, onSelectProduct, onJoinFost }: Pro
                       </>
                     ) : (
                       <>
-                        <span className="text-xs text-neutral-400 line-through block">{rrp.toLocaleString('vi-VN')}₫</span>
+                        {(promo.rrp > promo.price || isFostMember) && (<span className="text-xs text-neutral-400 line-through block">{rrp.toLocaleString('vi-VN')}₫</span>)}
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-base font-black text-[#F16C10]">{promo.price.toLocaleString('vi-VN')}₫</span>
                         </div>
-                        <p className="text-[10px] text-green-600 font-semibold mt-0.5">Bạn tiết kiệm {saving}₫</p>
+                        {promo.rrp > promo.price && (<p className="text-[10px] text-green-600 font-semibold mt-0.5">Bạn tiết kiệm {saving}₫</p>)}
                       </>
                     )}
                   </div>

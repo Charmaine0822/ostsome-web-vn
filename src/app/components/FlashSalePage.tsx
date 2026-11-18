@@ -54,7 +54,7 @@ export function FlashSalePage({ onBack, onSelectProduct }: FlashSalePageProps) {
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                   <span className="absolute top-2 right-2 bg-[#F16C10] text-white text-xs font-bold px-2 py-1 rounded-full">
-                    -{promo.pct}%
+                    {promo.pct > 0 ? `-${promo.pct}%` : 'Flash Sale'}
                   </span>
                 </div>
                 <div className="p-3 md:p-4">
@@ -62,7 +62,7 @@ export function FlashSalePage({ onBack, onSelectProduct }: FlashSalePageProps) {
                   <h3 className="text-sm font-bold text-black mb-2 line-clamp-2 min-h-[2.5em]">{product.title}</h3>
                   
                   <div className="flex flex-col">
-                    <span className="text-xs text-neutral-400 line-through">{promo.rrp.toLocaleString('vi-VN')}₫</span>
+                    {(promo.rrp > promo.price || Boolean(user)) && (<span className="text-xs text-neutral-400 line-through">{promo.rrp.toLocaleString('vi-VN')}₫</span>)}
                     <span className="text-base md:text-lg font-bold text-[#F16C10]">{displayPrice.toLocaleString('vi-VN')}₫</span>
                   </div>
                 </div>

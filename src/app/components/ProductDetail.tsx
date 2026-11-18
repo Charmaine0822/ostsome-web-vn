@@ -167,7 +167,7 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
   const selectedLive = selectedVariant ? livePriceForVariant(selectedVariant.variantId) : null;
   const legacyVariantPromo = selectedVariant ? getPromoForSku(selectedVariant.sku) : null;
   const promo = selectedVariant
-    ? legacyVariantPromo ?? getPromoForHandle(product.handle) ?? (selectedLive && selectedLive.price < selectedLive.rrp
+    ? legacyVariantPromo ?? (selectedLive && selectedLive.price < selectedLive.rrp
       ? { ...selectedLive, program: 'special-offer' as const, pct: Math.round(((selectedLive.rrp - selectedLive.price) / selectedLive.rrp) * 100) } : null)
     : getPromoForProduct(product);
   const activePrice = promo?.price ?? selectedLive?.price ?? selectedVariant?.price ?? product.price;

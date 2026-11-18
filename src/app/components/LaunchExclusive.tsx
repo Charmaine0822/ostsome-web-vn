@@ -73,7 +73,7 @@ export function LaunchExclusive({ onSelectProduct, onViewAll }: Props) {
                     onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'; }}
                   />
                   <div className="absolute top-2 right-2 bg-[#F16C10] text-white text-[10px] font-black rounded-full w-9 h-9 flex items-center justify-center leading-none">
-                    -{pct}%
+                    {pct > 0 ? `-${pct}%` : 'Early Bird'}
                   </div>
                 </div>
                 <div className="p-3 md:p-4">
@@ -82,12 +82,12 @@ export function LaunchExclusive({ onSelectProduct, onViewAll }: Props) {
                   
                   {isFostMember ? (
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-neutral-400 line-through">{rrp.toLocaleString('vi-VN')}₫</span>
+                      {(promo.rrp > promo.price || isFostMember) && (<span className="text-xs text-neutral-400 line-through">{rrp.toLocaleString('vi-VN')}₫</span>)}
                       <span className="text-base md:text-lg font-black text-[#F16C10]">{getFostPrice(promo.price).toLocaleString('vi-VN')}₫</span>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-neutral-400 line-through">{rrp.toLocaleString('vi-VN')}₫</span>
+                      {(promo.rrp > promo.price || isFostMember) && (<span className="text-xs text-neutral-400 line-through">{rrp.toLocaleString('vi-VN')}₫</span>)}
                       <span className="text-base md:text-lg font-black text-[#F16C10]">{promo.price.toLocaleString('vi-VN')}₫</span>
                     </div>
                   )}

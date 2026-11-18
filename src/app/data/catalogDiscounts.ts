@@ -36,9 +36,9 @@ export async function loadCatalogPrices(products: ShopifyProduct[]) {
     rules = result.rules;
     lastRules = rules;
   } catch (error) {
-    // On a temporary failure keep the last good discounts so prices don't flip back; first-load failure falls back to Shopify/table prices.
-    rules = lastRules ?? [];
-    console.error('Automatic discount display unavailable. Check SHOPIFY_ADMIN_TOKEN and read_discounts.', error);
+    // Use current Shopify base prices on failure; never revive old campaign amounts.
+    rules = [];
+    console.error('Automatic discount display unavailable. Check SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET and read_discounts.', error);
   }
   bySku.clear(); byHandle.clear(); byVariant.clear();
   for (const p of products) {

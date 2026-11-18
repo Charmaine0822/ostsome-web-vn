@@ -130,7 +130,7 @@ export function OneSeasonOffPage({ onBack, onSelectProduct }: Props) {
                     
                     {isFostMember ? (
                       <>
-                        <span className="text-xs line-through block" style={{ color: '#6F6A63' }}>{rrp.toLocaleString('vi-VN')}₫</span>
+                        {(promo.rrp > promo.price || isFostMember) && (<span className="text-xs line-through block" style={{ color: '#6F6A63' }}>{rrp.toLocaleString('vi-VN')}₫</span>)}
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-base font-black" style={{ color: '#F16C10' }}>{getFostPrice(promo.price).toLocaleString('vi-VN')}₫</span>
                         </div>
@@ -138,11 +138,11 @@ export function OneSeasonOffPage({ onBack, onSelectProduct }: Props) {
                       </>
                     ) : (
                       <>
-                        <span className="text-xs line-through block" style={{ color: '#6F6A63' }}>{rrp.toLocaleString('vi-VN')}₫</span>
+                        {(promo.rrp > promo.price || isFostMember) && (<span className="text-xs line-through block" style={{ color: '#6F6A63' }}>{rrp.toLocaleString('vi-VN')}₫</span>)}
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-base font-black" style={{ color: '#F16C10' }}>{promo.price.toLocaleString('vi-VN')}₫</span>
                         </div>
-                        <p className="text-[10px] font-semibold mt-0.5 text-green-600">Bạn tiết kiệm {saving}₫</p>
+                        {promo.rrp > promo.price && (<p className="text-[10px] font-semibold mt-0.5 text-green-600">Bạn tiết kiệm {saving}₫</p>)}
                       </>
                     )}
                   </div>
