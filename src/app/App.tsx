@@ -371,11 +371,10 @@ function AppInner() {
         />
       )}
 
-      <CartDrawer onJoinFost={() => setAuthModal({ open: true, view: 'signup' })} />
+      <CartDrawer />
 
       {showHeader && (
         <Header
-          onNavToSignup={() => setAuthModal({ open: true, view: 'signup' })}
           onNavToProducts={handleNavToProducts}
           onNavToHome={handleNavToHome}
           onNavToBrands={handleNavToBrands}
@@ -437,7 +436,6 @@ function AppInner() {
       {page === 'product-detail' && selectedProduct && (
         <ProductDetail
           product={liveProducts.find(p => p.handle === selectedProduct.handle) ?? selectedProduct}
-          onJoinFost={() => setAuthModal({ open: true, view: 'signup' })}
           onBack={handleBackFromProduct}
           onCheckout={handleGoToCheckout}
           onSelectProduct={handleSelectProduct}

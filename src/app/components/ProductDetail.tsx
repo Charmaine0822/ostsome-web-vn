@@ -20,7 +20,6 @@ type ProductDetailProps = {
   product: Product;
   onBack: () => void;
   onCheckout?: () => void;
-  onJoinFost?: () => void;
   // Lets the related-products row navigate to another product's detail
   // page. Optional so this component doesn't break if a parent hasn't
   // wired it up yet — in that case related product cards just won't
@@ -30,7 +29,7 @@ type ProductDetailProps = {
 
 const RUBYOUNG_SPIN_HANDLES = ['rubyoung-spin'];
 
-export function ProductDetail({ product, onBack, onCheckout, onSelectProduct, onJoinFost }: ProductDetailProps) {
+export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: ProductDetailProps) {
   const { user } = useAuth();
   const isFostMember = Boolean(user);
   const [activeImg, setActiveImg] = useState(0);
@@ -1043,7 +1042,7 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct, on
             </div>
             {!isFostMember && (
               <p className="text-xs text-[#F16C10] font-semibold mb-5">
-                FOST Member giảm thêm 5% — <button onClick={onJoinFost} className="underline font-bold">Đăng ký FOST miễn phí</button> để nhận giá này.
+                FOST Member giảm thêm 5% — Tham gia miễn phí để nhận giá này.
               </p>
             )}
             {isFostMember && (
