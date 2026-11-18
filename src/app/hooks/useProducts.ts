@@ -5,17 +5,47 @@ import type { ShopifyProduct } from '../data/shopify';
 import type { Product, ProductMetafields } from '../data/products';
 
 // ─── MODULE-LEVEL CACHE ───────────────────────────────────────────────────────
-// Products are fetched once and cached for the lifetime of the app session
+// Products are fetched once and cached for the lifetime of the app session.
+// The full catalog is re-downloaded only every FULL_REFETCH_MS; in between,
+// only the (small, CDN-cached) Shopify discount list is re-read, so a discount
+// Aries sets in Shopify shows up within about a minute without hammering the
+// Storefront API.
+const FULL_REFETCH_MS = 5 * 60 * 1000;
 let cachedProducts: Product[] | null = null;
+let rawProducts: ShopifyProduct[] | null = null;
 let fetchPromise: Promise<Product[]> | null = null;
 let refreshPromise: Promise<Product[]> | null = null;
 let lastRefresh = 0;
+let lastFullFetch = 0;
+
+// Skip products with no real price set in Shopify (incomplete listings).
+function mapAll(raw: ShopifyProduct[]): Product[] {
+  return raw
+    .filter(p => Number(p.variants.edges[0]?.node.price.amount) > 0)
+    .map(mapShopifyProduct)
+    .filter(p => p.price > 0);
+}
+
+async function loadAll(): Promise<Product[]> {
+  const raw = await fetchAllProducts();
+  await loadCatalogPrices(raw);
+  rawProducts = raw;
+  lastFullFetch = lastRefresh = Date.now();
+  return mapAll(raw);
+}
+
 async function refreshCatalog() {
   if (!refreshPromise && Date.now() - lastRefresh >= 30000) {
     refreshPromise = (async () => {
-      const fresh = await fetchAllProducts();
-      await loadCatalogPrices(fresh);
-      cachedProducts = fresh.filter(p => Number(p.variants.edges[0]?.node.price.amount) > 0).map(mapShopifyProduct);
+      if (!rawProducts || Date.now() - lastFullFetch >= FULL_REFETCH_MS) {
+        const raw = await fetchAllProducts();
+        await loadCatalogPrices(raw);
+        rawProducts = raw;
+        lastFullFetch = Date.now();
+      } else {
+        await loadCatalogPrices(rawProducts); // discounts only
+      }
+      cachedProducts = mapAll(rawProducts);
       lastRefresh = Date.now();
       return cachedProducts;
     })().finally(() => { refreshPromise = null; });
@@ -265,22 +295,13 @@ export function useProducts() {
       setLoading(false);
     }
 
-    if (!fetchPromise) {
-      fetchPromise = fetchAllProducts().then(async shopifyProducts => {
-        await loadCatalogPrices(shopifyProducts);
-        return shopifyProducts
-          .filter(p => Number(p.variants.edges[0]?.node.price.amount) > 0)
-          .map(mapShopifyProduct)
-          // Exclude products with no real price set in Shopify (shows as
-          // SGD 0.00) — these are incomplete listings, not actual deals.
-          .filter(p => p.price >= 0)
-      });
-    }
+    if (!fetchPromise) fetchPromise = loadAll();
 
     fetchPromise
       .then(mapped => {
-        cachedProducts = mapped;
-        setProducts(mapped);
+        // Never overwrite a newer refreshed list with the first-load snapshot.
+        if (cachedProducts === null) cachedProducts = mapped;
+        setProducts(cachedProducts);
         setLoading(false);
       })
       .catch(err => {
