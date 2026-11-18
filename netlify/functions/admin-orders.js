@@ -1,3 +1,4 @@
+const { hasAdminCredentials, adminFetch } = require('./lib/shopify-admin');
 // netlify/functions/admin-orders.js
 // Proxies requests to Shopify's Admin API so the access token never reaches the browser.
 // Also requires a valid, signed session token (issued by admin-auth.js) on every
@@ -29,13 +30,13 @@ function isValidToken(token, secret) {
 }
 
 exports.handler = async function (event) {
-  const adminToken = process.env.SHOPIFY_ADMIN_TOKEN;
+  
   const sessionSecret = process.env.ADMIN_SESSION_SECRET;
 
-  if (!adminToken) {
+  if (!hasAdminCredentials()) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Server is missing SHOPIFY_ADMIN_TOKEN' }),
+      body: JSON.stringify({ error: 'Shopify Admin credentials are not configured' }),
     };
   }
   if (!sessionSecret) {
@@ -63,11 +64,10 @@ exports.handler = async function (event) {
   if (params.created_at_max) query.set('created_at_max', params.created_at_max);
 
   try {
-    const shopifyResponse = await fetch(
+    const shopifyResponse = await adminFetch(
       `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${API_VERSION}/orders.json?${query.toString()}`,
       {
         headers: {
-          'X-Shopify-Access-Token': adminToken,
           'Content-Type': 'application/json',
         },
       }

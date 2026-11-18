@@ -1,3 +1,4 @@
+const { hasAdminCredentials, adminFetch } = require('./lib/shopify-admin');
 // netlify/functions/tag-fost-member.js
 // Tags a newly registered customer as a FOST member in Shopify Admin, right
 // after signup (called from FostAuthModal.tsx) — the Admin API access
@@ -26,11 +27,11 @@ exports.handler = async function (event) {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  const adminToken = process.env.SHOPIFY_ADMIN_TOKEN;
-  if (!adminToken) {
+  
+  if (!hasAdminCredentials()) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Server is missing SHOPIFY_ADMIN_TOKEN' }),
+      body: JSON.stringify({ error: 'Shopify Admin credentials are not configured' }),
     };
   }
 
@@ -59,12 +60,11 @@ exports.handler = async function (event) {
   `;
 
   try {
-    const shopifyResponse = await fetch(
+    const shopifyResponse = await adminFetch(
       `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${API_VERSION}/graphql.json`,
       {
         method: 'POST',
         headers: {
-          'X-Shopify-Access-Token': adminToken,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -75,7 +75,10 @@ exports.handler = async function (event) {
     );
 
     const result = await shopifyResponse.json();
-    const userErrors = result?.data?.tagsAdd?.userErrors ?? [];
+    if (!shopifyResponse.ok || result.errors || !result.data?.tagsAdd) {
+      return { statusCode: 502, body: JSON.stringify({ error: 'Shopify rejected the request; check app permissions' }) };
+    }
+    const userErrors = result.data.tagsAdd.userErrors ?? [];
 
     if (userErrors.length > 0) {
       return {

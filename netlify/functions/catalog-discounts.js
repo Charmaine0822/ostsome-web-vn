@@ -1,10 +1,11 @@
+const { hasAdminCredentials, adminFetch } = require('./lib/shopify-admin');
 // Public, read-only catalog projection. Never returns codes, customer criteria or tokens.
 const DOMAIN = '454e76.myshopify.com';
 const PAGE = 'nodes { id } pageInfo { hasNextPage endCursor }';
 async function queryShopify(query, variables) {
-  const response = await fetch(`https://${DOMAIN}/admin/api/2026-01/graphql.json`, {
+  const response = await adminFetch(`https://${DOMAIN}/admin/api/2026-01/graphql.json`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': process.env.SHOPIFY_ADMIN_TOKEN },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ query, variables }), signal: AbortSignal.timeout(8000),
   });
   const result = await response.json();
@@ -26,7 +27,7 @@ async function allIds(id, type, field, connection) {
 }
 exports.handler = async event => {
   if (event.httpMethod !== 'GET') return { statusCode: 405, body: '' };
-  if (!process.env.SHOPIFY_ADMIN_TOKEN) return { statusCode: 503, body: JSON.stringify({ error: 'Catalog discounts are not configured' }) };
+  if (!hasAdminCredentials()) return { statusCode: 503, body: JSON.stringify({ error: 'Catalog discounts are not configured' }) };
   try {
     const rules = [];
     let cursor = null;
