@@ -8,7 +8,7 @@ import { fetchProductByHandle } from '../data/shopify';
 import type { ShopifyProduct } from '../data/shopify';
 import { getFostPrice } from '../data/pricing';
 import { livePriceForVariant } from '../data/catalogDiscounts';
-import { getPromoForSku, getPromoForProduct, PROGRAM_LABELS } from '../data/promoPrograms';
+import { getPromoForSku, getPromoForProduct, getPromoForHandle, PROGRAM_LABELS } from '../data/promoPrograms';
 import { SOLD_COUNT_BASELINE } from '../data/soldCounts';
 import { useProducts } from '../hooks/useProducts';
 import { ProductCard } from './ProductCard';
@@ -167,8 +167,8 @@ export function ProductDetail({ product, onBack, onCheckout, onSelectProduct }: 
   const selectedLive = selectedVariant ? livePriceForVariant(selectedVariant.variantId) : null;
   const legacyVariantPromo = selectedVariant ? getPromoForSku(selectedVariant.sku) : null;
   const promo = selectedVariant
-    ? legacyVariantPromo ?? (selectedLive && selectedLive.price < selectedLive.rrp
-      ? { ...selectedLive, program: 'special-offer' as const } : null)
+    ? legacyVariantPromo ?? getPromoForHandle(product.handle) ?? (selectedLive && selectedLive.price < selectedLive.rrp
+      ? { ...selectedLive, program: 'special-offer' as const, pct: Math.round(((selectedLive.rrp - selectedLive.price) / selectedLive.rrp) * 100) } : null)
     : getPromoForProduct(product);
   const activePrice = promo?.price ?? selectedLive?.price ?? selectedVariant?.price ?? product.price;
   const comparePrice = promo?.rrp ?? selectedLive?.rrp ?? product.comparePrice;
